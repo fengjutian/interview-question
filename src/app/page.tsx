@@ -1,7 +1,7 @@
 import Image from "next/image";
-import { MarkdownRenderer } from "../components/MarkdownRenderer";
 import fs from "fs";
 import path from "path";
+import BlogContent from "./BlogContent";
 
 // 文章列表数据
 const articles = [
@@ -18,11 +18,13 @@ function getMarkdownContent(fileName: string): string {
   return fs.readFileSync(markdownPath, "utf8");
 }
 
-export default function Home() {
-  // 默认显示第一篇文章
-  const defaultArticle = articles[0];
-  const markdownContent = getMarkdownContent(defaultArticle.file);
+// 预加载所有Markdown内容
+const articleContents = articles.reduce((acc, article) => {
+  acc[article.file] = getMarkdownContent(article.file);
+  return acc;
+}, {} as Record<string, string>);
 
+export default function Home() {
   return (
     <div className="flex min-h-screen bg-zinc-50">
       <main className="max-w-7xl mx-auto p-4">
@@ -30,23 +32,7 @@ export default function Home() {
           <Image src="/next.svg" alt="Logo" width={100} height={20} />
           <h1 className="text-3xl font-semibold">Markdown 博客</h1>
         </div>
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* 左侧内容 */}
-          <div className="lg:w-2/3 bg-white p-6 rounded-lg">
-            <MarkdownRenderer content={markdownContent} />
-          </div>
-          {/* 右侧列表 */}
-          <div className="lg:w-1/3 bg-white p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">文章列表</h2>
-            {articles.map(article => (
-              <div key={article.id} className="border-b pb-4">
-                <h3 className="text-lg hover:text-blue-600">{article.title}</h3>
-                <p className="text-sm text-gray-500">{article.date}</p>
-                <p className="text-sm text-gray-600">{article.summary}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+        <BlogContent articles={articles} articleContents={articleContents} />
       </main>
     </div>
   );
