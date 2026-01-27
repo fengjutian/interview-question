@@ -30,7 +30,7 @@ export default function BlogContent({ articles, articleContents }: BlogContentPr
         </div>
       </div>
       {/* 右侧列表 */}
-      <div className="lg:w-[400px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0">
+      <div className="lg:w-[320px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0">
         <h2 className="text-xl font-semibold mb-4">文章列表</h2>
         {articles.map(article => (
           <div 
