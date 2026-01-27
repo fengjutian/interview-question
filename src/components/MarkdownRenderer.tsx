@@ -3,8 +3,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'github-markdown-css/github-markdown.css';
-import 'github-markdown-css/github-markdown-light.css';
-import 'github-markdown-css/github-markdown-dark.css';
 
 interface MarkdownRendererProps {
   content: string;
@@ -12,20 +10,23 @@ interface MarkdownRendererProps {
 }
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, theme = 'light' }) => {
-  const getThemeClass = () => {
+  const getThemeAttribute = () => {
     switch (theme) {
       case 'dark':
-        return 'markdown-body github-markdown-dark';
-      case 'default':
-        return 'markdown-body';
+        return 'dark';
       case 'light':
+        return 'light';
+      case 'default':
       default:
-        return 'markdown-body github-markdown-light';
+        return undefined;
     }
   };
 
   return (
-    <div className={`${getThemeClass()} w-full overflow-x-auto`}>
+    <div 
+      className="markdown-body w-full overflow-x-auto" 
+      data-theme={getThemeAttribute()}
+    >
       <ReactMarkdown 
         remarkPlugins={[remarkGfm]} 
         rehypePlugins={[rehypeHighlight]} 
