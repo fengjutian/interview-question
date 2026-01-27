@@ -27,7 +27,7 @@ const articleContents = articles.reduce((acc, article) => {
 export default function Home() {
   return (
     <div className="flex min-h-screen bg-zinc-50">
-      <main className="max-w-7xl mx-auto p-4">
+      <main className="max-w-[1200px] mx-auto p-4">
         <div className="flex justify-between items-center mb-8">
           <Image src="/next.svg" alt="Logo" width={100} height={20} />
           <h1 className="text-3xl font-semibold">Markdown 博客</h1>
