@@ -24,11 +24,13 @@ export default function BlogContent({ articles, articleContents }: BlogContentPr
   return (
     <div className="flex flex-col lg:flex-row gap-8">
       {/* 左侧内容 */}
-      <div className="lg:w-2/3 bg-white p-6 rounded-lg">
-        <MarkdownRenderer content={markdownContent} />
+      <div className="lg:w-[800px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0">
+        <div className="w-full overflow-hidden">
+          <MarkdownRenderer content={markdownContent} />
+        </div>
       </div>
       {/* 右侧列表 */}
-      <div className="lg:w-1/3 bg-white p-6 rounded-lg">
+      <div className="lg:w-[400px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0">
         <h2 className="text-xl font-semibold mb-4">文章列表</h2>
         {articles.map(article => (
           <div 

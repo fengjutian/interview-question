@@ -41,7 +41,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
 
   return (
     <div 
-      className="prose max-w-none dark:prose-invert"
+      className="prose max-w-none dark:prose-invert w-full overflow-x-auto"
+      style={{ maxWidth: '100%', wordBreak: 'break-word' }}
       dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
     />
   );
