@@ -44,8 +44,22 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
     text = text.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
     text = text.replace(/(<li>.*?<\/li>)/s, '<ol>$1</ol>');
     
+    // 替换表格
+    text = text.replace(/\|(.+?)\|\n\|(-+\|)+\n((?:\|.+?\|\n)+)/g, (match, headers, separator, rows) => {
+      const headerCells = headers.split('|').filter(cell => cell.trim() !== '');
+      const headerRow = headerCells.map(cell => `<th>${cell.trim()}</th>`).join('');
+      const rowCells = rows.trim().split('\n').map(row => {
+        const cells = row.split('|').filter(cell => cell.trim() !== '');
+        return `<tr>${cells.map(cell => `<td>${cell.trim()}</td>`).join('')}</tr>`;
+      }).join('');
+      return `<table><thead><tr>${headerRow}</tr></thead><tbody>${rowCells}</tbody></table>`;
+    });
+    
+    // 替换引用块
+    text = text.replace(/^>\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+    
     // 替换段落
-    text = text.replace(/^(?!<h|<ul|<ol|<li|<code|<strong|<em|<a).+$/gm, '<p>$&</p>');
+    text = text.replace(/^(?!<h|<ul|<ol|<li|<code|<strong|<em|<a|<table|<blockquote).+$/gm, '<p>$&</p>');
     
     return text;
   };
