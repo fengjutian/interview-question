@@ -9,8 +9,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@tailwindcss/typography": "^0.5.19",
     "github-markdown-css": "^5.8.1",
     "highlight.js": "^11.10.0",
+    "markdown-css": "^0.0.3",
     "next": "16.1.5",
     "react": "19.2.3",
     "react-dom": "19.2.3",
