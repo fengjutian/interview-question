@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@douyinfe/semi-icons": "^2.90.13",
+    "@douyinfe/semi-ui": "^2.90.13",
     "@tailwindcss/typography": "^0.5.19",
     "github-markdown-css": "^5.8.1",
     "highlight.js": "^11.10.0",

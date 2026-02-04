@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { FloatButton } from '@douyinfe/semi-ui';
+import { IconAIEditLevel1 } from '@douyinfe/semi-icons';
 import { MarkdownRenderer } from "../components/MarkdownRenderer";
 
 interface Article {
@@ -32,6 +34,10 @@ export default function BlogContent({ articles, articleContents }: BlogContentPr
     
     const regex = new RegExp(`(${searchTerm})`, 'gi');
     return content.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
+  };
+
+   const onClick = () => {
+      console.log('float button clicked');
   };
 
   return (
@@ -92,6 +98,7 @@ export default function BlogContent({ articles, articleContents }: BlogContentPr
           </div>
         ))}
       </div>
+      <FloatButton icon={<IconAIEditLevel1 />} style={{ bottom: '20px' }} onClick={onClick}/>
     </div>
   );
 }
