@@ -21,7 +21,18 @@ export default function BlogContent({ articles, articleContents }: BlogContentPr
   const [selectedArticle, setSelectedArticle] = useState(articles[0]);
   // 状态管理：当前主题
   const [theme, setTheme] = useState<'light' | 'dark' | 'default'>('light');
+  // 状态管理：搜索关键词
+  const [searchTerm, setSearchTerm] = useState('');
+  
   const markdownContent = articleContents[selectedArticle.file];
+  
+  // 高亮显示搜索结果
+  const highlightSearchResults = (content: string) => {
+    if (!searchTerm) return content;
+    
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    return content.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
+  };
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-120px)]">
@@ -48,8 +59,20 @@ export default function BlogContent({ articles, articleContents }: BlogContentPr
             默认
           </button>
         </div>
+        
+        {/* 搜索框 */}
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="搜索内容..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        
         <div className="w-full">
-          <MarkdownRenderer content={markdownContent} theme={theme} />
+          <MarkdownRenderer content={markdownContent} theme={theme} searchTerm={searchTerm} />
         </div>
       </div>
       {/* 右侧列表 */}
@@ -58,10 +81,10 @@ export default function BlogContent({ articles, articleContents }: BlogContentPr
         {articles.map(article => (
           <div 
             key={article.id} 
-            className={`border-b pb-4 cursor-pointer hover:bg-gray-50 ${selectedArticle.id === article.id ? 'bg-gray-50' : ''}`}
+            className={`border-b pb-4 cursor-pointer hover:bg-green-50 ${selectedArticle.id === article.id ? 'bg-green-50' : ''}`}
             onClick={() => setSelectedArticle(article)}
           >
-            <h3 className={`text-lg hover:text-blue-600 ${selectedArticle.id === article.id ? 'text-blue-600' : ''}`}>
+            <h3 className={`text-lg hover:text-green-600 ${selectedArticle.id === article.id ? 'text-green-600' : ''}`}>
               {article.title}
             </h3>
             <p className="text-sm text-gray-500">{article.date}</p>
