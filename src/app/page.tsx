@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import BlogContent from "./BlogContent";
 import { generateSummary } from '@/utils/summary';
+import { IconMoon, IconSetting, IconGithubLogo } from '@douyinfe/semi-icons';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,8 +66,15 @@ export default function Home() {
     <div className="flex min-h-screen bg-zinc-50">
       <main className="max-w-[1200px] mx-auto p-4">
         <div className="flex justify-between items-center mb-8">
-          <Image src="/next.svg" alt="Logo" width={100} height={20} />
-          <h1 className="text-3xl font-semibold">博客</h1>
+          <div className="flex items-center gap-4">
+            <Image src="/next.svg" alt="Logo" width={100} height={20} />
+            <h1 className="text-3xl font-semibold">博客</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <IconMoon className="cursor-pointer text-gray-600 hover:text-gray-900" size="large" />
+            <IconSetting className="cursor-pointer text-gray-600 hover:text-gray-900" size="large" />
+            <IconGithubLogo className="cursor-pointer text-gray-600 hover:text-gray-900" size="large" />
+          </div>
         </div>
         <BlogContent articles={articles} articleContents={articleContents} />
       </main>
