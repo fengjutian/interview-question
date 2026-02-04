@@ -24,11 +24,11 @@ export default function BlogContent({ articles, articleContents }: BlogContentPr
   const markdownContent = articleContents[selectedArticle.file];
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8">
+    <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-120px)]">
       {/* 左侧内容 */}
-      <div className="lg:w-[800px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0">
+      <div className="lg:w-[800px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0 overflow-y-auto">
         {/* 主题切换按钮 */}
-        <div className="mb-4 flex gap-2">
+        <div className="mb-4 flex gap-2 sticky top-0 bg-white pt-1 pb-1 z-10">
           <button 
             onClick={() => setTheme('light')}
             className={`px-3 py-1 rounded ${theme === 'light' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
@@ -48,13 +48,13 @@ export default function BlogContent({ articles, articleContents }: BlogContentPr
             默认
           </button>
         </div>
-        <div className="w-full overflow-hidden">
+        <div className="w-full">
           <MarkdownRenderer content={markdownContent} theme={theme} />
         </div>
       </div>
       {/* 右侧列表 */}
-      <div className="lg:w-[320px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0">
-        <h2 className="text-xl font-semibold mb-4">文章列表</h2>
+      <div className="lg:w-[320px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0 overflow-y-auto">
+        <h2 className="text-xl font-semibold mb-4 sticky top-0 bg-white pt-1 pb-1 z-10">文章列表</h2>
         {articles.map(article => (
           <div 
             key={article.id} 
