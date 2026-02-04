@@ -74,6 +74,11 @@ export default function SettingsClient() {
     }
   };
   
+  // 处理 GitHub 图标点击
+  const handleGithubClick = () => {
+    window.open('https://github.com/fengjutian/interview-question', '_blank');
+  };
+  
   // 获取当前实际主题状态（用于显示图标）
   const getCurrentTheme = () => {
     if (theme === 'system') {
@@ -91,7 +96,7 @@ export default function SettingsClient() {
           <IconMoon className="cursor-pointer text-gray-600 hover:text-gray-900" size="large" onClick={handleMoonClick} />
         )}
         <IconSetting className="cursor-pointer text-gray-600 hover:text-gray-900" size="large" onClick={handleSettingClick} />
-        <IconGithubLogo className="cursor-pointer text-gray-600 hover:text-gray-900" size="large" />
+        <IconGithubLogo className="cursor-pointer text-gray-600 hover:text-gray-900" size="large" onClick={handleGithubClick} />
       </div>
       
       {/* 设置侧边栏 */}
