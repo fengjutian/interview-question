@@ -3,20 +3,42 @@ import fs from "fs";
 import path from "path";
 import BlogContent from "./BlogContent";
 
-// 文章列表数据
-const articles = [
-  { id: 1, title: "Markdown 渲染示例", date: "2026-01-27", summary: "示例页面", file: "example.md" },
-  { id: 2, title: "Next.js 入门指南", date: "2026-01-26", summary: "Next.js 框架介绍", file: "nextjs-guide.md" },
-  { id: 3, title: "React 组件开发", date: "2026-01-25", summary: "React 组件最佳实践", file: "react-components.md" },
-  { id: 4, title: "Tailwind CSS 样式设计", date: "2026-01-24", summary: "Tailwind CSS 使用指南", file: "tailwind-css.md" },
-  { id: 5, title: "TypeScript 入门指南", date: "2026-01-23", summary: "TypeScript 基础教程", file: "typescript.md" },
-];
-
 // 从src/md目录读取Markdown文件内容
 function getMarkdownContent(fileName: string): string {
   const markdownPath = path.join(process.cwd(), "src", "md", fileName);
   return fs.readFileSync(markdownPath, "utf8");
 }
+
+// 自动读取src/md目录下的所有Markdown文件
+function getArticles() {
+  const mdDirectory = path.join(process.cwd(), "src", "md");
+  const files = fs.readdirSync(mdDirectory);
+  
+  // 过滤出.md文件并生成文章元数据
+  return files
+    .filter(file => file.endsWith('.md'))
+    .map((file, index) => {
+      // 从文件名中提取标题（移除.md后缀）
+      const title = file.replace('.md', '');
+      
+      // 读取文件内容以提取摘要（取前100个字符）
+      const content = getMarkdownContent(file);
+      const summary = content.substring(0, 100).trim() + '...';
+      
+      // 使用当前日期作为默认日期
+      const date = new Date().toISOString().split('T')[0];
+      
+      return {
+        id: index + 1,
+        title,
+        date,
+        summary,
+        file
+      };
+    });
+}
+
+const articles = getArticles();
 
 // 预加载所有Markdown内容
 const articleContents = articles.reduce((acc, article) => {
