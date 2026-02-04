@@ -32,7 +32,15 @@ function getArticles() {
   // 生成文章元数据
   return mdFilesWithStats.map(({ file }, index) => {
     // 从文件名中提取标题（移除.md后缀）
-    const title = file.replace('.md', '');
+    let title = file.replace('.md', '');
+    
+    // 从文件名中提取分类信息（如 "Java_基础.md" 中的 "Java"）
+    let category = '其他';
+    const underscoreIndex = title.indexOf('_');
+    if (underscoreIndex > 0) {
+      category = title.substring(0, underscoreIndex);
+      title = title.substring(underscoreIndex + 1);
+    }
     
     // 读取文件内容以提取摘要
     const content = getMarkdownContent(file);
@@ -46,7 +54,8 @@ function getArticles() {
       title,
       date,
       summary,
-      file
+      file,
+      category
     };
   });
 }
