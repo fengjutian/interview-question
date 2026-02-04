@@ -51,15 +51,16 @@ function getArticles() {
   });
 }
 
-const articles = getArticles();
-
-// 预加载所有Markdown内容
-const articleContents = articles.reduce((acc, article) => {
-  acc[article.file] = getMarkdownContent(article.file);
-  return acc;
-}, {} as Record<string, string>);
-
 export default function Home() {
+  // 在组件内部调用 getArticles()，确保每次构建时都能读取最新的文件
+  const articles = getArticles();
+  
+  // 预加载所有Markdown内容
+  const articleContents = articles.reduce((acc, article) => {
+    acc[article.file] = getMarkdownContent(article.file);
+    return acc;
+  }, {} as Record<string, string>);
+  
   return (
     <div className="flex min-h-screen bg-zinc-50">
       <main className="max-w-[1200px] mx-auto p-4">
