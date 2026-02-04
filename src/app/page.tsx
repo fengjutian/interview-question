@@ -3,6 +3,8 @@ import fs from "fs";
 import path from "path";
 import BlogContent from "./BlogContent";
 
+export const dynamic = 'force-dynamic';
+
 // 从src/md目录读取Markdown文件内容
 function getMarkdownContent(fileName: string): string {
   const markdownPath = path.join(process.cwd(), "src", "md", fileName);
@@ -14,28 +16,39 @@ function getArticles() {
   const mdDirectory = path.join(process.cwd(), "src", "md");
   const files = fs.readdirSync(mdDirectory);
   
-  // 过滤出.md文件并生成文章元数据
-  return files
+  // 过滤出.md文件并获取修改时间
+  const mdFilesWithStats = files
     .filter(file => file.endsWith('.md'))
-    .map((file, index) => {
-      // 从文件名中提取标题（移除.md后缀）
-      const title = file.replace('.md', '');
-      
-      // 读取文件内容以提取摘要（取前100个字符）
-      const content = getMarkdownContent(file);
-      const summary = content.substring(0, 100).trim() + '...';
-      
-      // 使用当前日期作为默认日期
-      const date = new Date().toISOString().split('T')[0];
-      
+    .map(file => {
+      const filePath = path.join(mdDirectory, file);
+      const stats = fs.statSync(filePath);
       return {
-        id: index + 1,
-        title,
-        date,
-        summary,
-        file
+        file,
+        mtime: stats.mtime
       };
-    });
+    })
+    .sort((a, b) => b.mtime.getTime() - a.mtime.getTime()); // 按修改时间倒序排序
+  
+  // 生成文章元数据
+  return mdFilesWithStats.map(({ file }, index) => {
+    // 从文件名中提取标题（移除.md后缀）
+    const title = file.replace('.md', '');
+    
+    // 读取文件内容以提取摘要（取前100个字符）
+    const content = getMarkdownContent(file);
+    const summary = content.substring(0, 100).trim() + '...';
+    
+    // 使用当前日期作为默认日期
+    const date = new Date().toISOString().split('T')[0];
+    
+    return {
+      id: index + 1,
+      title,
+      date,
+      summary,
+      file
+    };
+  });
 }
 
 const articles = getArticles();
