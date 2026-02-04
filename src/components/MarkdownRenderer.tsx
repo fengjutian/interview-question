@@ -37,7 +37,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, the
 
   // 自定义渲染器，处理文本高亮
   const components = {
-    p: ({ node, children }) => {
+    p: (props: any) => {
+      const { children } = props;
       const highlightedChildren = Array.isArray(children) 
         ? children.map((child, i) => 
             typeof child === 'string' ? highlightSearchResults(child) : child
@@ -48,7 +49,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, the
       
       return <p>{highlightedChildren}</p>;
     },
-    h1: ({ node, children }) => {
+    h1: (props: any) => {
+      const { children } = props;
       const highlightedChildren = Array.isArray(children) 
         ? children.map((child, i) => 
             typeof child === 'string' ? highlightSearchResults(child) : child
@@ -59,7 +61,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, the
       
       return <h1>{highlightedChildren}</h1>;
     },
-    h2: ({ node, children }) => {
+    h2: (props: any) => {
+      const { children } = props;
       const highlightedChildren = Array.isArray(children) 
         ? children.map((child, i) => 
             typeof child === 'string' ? highlightSearchResults(child) : child
@@ -70,7 +73,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, the
       
       return <h2>{highlightedChildren}</h2>;
     },
-    h3: ({ node, children }) => {
+    h3: (props: any) => {
+      const { children } = props;
       const highlightedChildren = Array.isArray(children) 
         ? children.map((child, i) => 
             typeof child === 'string' ? highlightSearchResults(child) : child
@@ -81,7 +85,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, the
       
       return <h3>{highlightedChildren}</h3>;
     },
-    h4: ({ node, children }) => {
+    h4: (props: any) => {
+      const { children } = props;
       const highlightedChildren = Array.isArray(children) 
         ? children.map((child, i) => 
             typeof child === 'string' ? highlightSearchResults(child) : child
@@ -92,7 +97,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, the
       
       return <h4>{highlightedChildren}</h4>;
     },
-    h5: ({ node, children }) => {
+    h5: (props: any) => {
+      const { children } = props;
       const highlightedChildren = Array.isArray(children) 
         ? children.map((child, i) => 
             typeof child === 'string' ? highlightSearchResults(child) : child
@@ -103,7 +109,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, the
       
       return <h5>{highlightedChildren}</h5>;
     },
-    h6: ({ node, children }) => {
+    h6: (props: any) => {
+      const { children } = props;
       const highlightedChildren = Array.isArray(children) 
         ? children.map((child, i) => 
             typeof child === 'string' ? highlightSearchResults(child) : child
@@ -114,7 +121,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, the
       
       return <h6>{highlightedChildren}</h6>;
     },
-    li: ({ node, children }) => {
+    li: (props: any) => {
+      const { children } = props;
       const highlightedChildren = Array.isArray(children) 
         ? children.map((child, i) => 
             typeof child === 'string' ? highlightSearchResults(child) : child
@@ -125,7 +133,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, the
       
       return <li>{highlightedChildren}</li>;
     },
-    blockquote: ({ node, children }) => {
+    blockquote: (props: any) => {
+      const { children } = props;
       const highlightedChildren = Array.isArray(children) 
         ? children.map((child, i) => 
             typeof child === 'string' ? highlightSearchResults(child) : child

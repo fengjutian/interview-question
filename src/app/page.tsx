@@ -5,8 +5,6 @@ import BlogContent from "./BlogContent";
 import { generateSummary } from '@/utils/summary';
 import SettingsClient from "./SettingsClient";
 
-export const dynamic = 'force-dynamic';
-
 // 从src/md目录读取Markdown文件内容
 function getMarkdownContent(fileName: string): string {
   const markdownPath = path.join(process.cwd(), "src", "md", fileName);
