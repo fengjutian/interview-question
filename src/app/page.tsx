@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import BlogContent from "./BlogContent";
 import { generateSummary } from '@/utils/summary';
-import { IconMoon, IconSetting, IconGithubLogo } from '@douyinfe/semi-icons';
+import SettingsClient from "./SettingsClient";
 
 export const dynamic = 'force-dynamic';
 
@@ -70,11 +70,7 @@ export default function Home() {
             <Image src="/next.svg" alt="Logo" width={100} height={20} />
             <h1 className="text-3xl font-semibold">博客</h1>
           </div>
-          <div className="flex items-center gap-4">
-            <IconMoon className="cursor-pointer text-gray-600 hover:text-gray-900" size="large" />
-            <IconSetting className="cursor-pointer text-gray-600 hover:text-gray-900" size="large" />
-            <IconGithubLogo className="cursor-pointer text-gray-600 hover:text-gray-900" size="large" />
-          </div>
+          <SettingsClient />
         </div>
         <BlogContent articles={articles} articleContents={articleContents} />
       </main>
