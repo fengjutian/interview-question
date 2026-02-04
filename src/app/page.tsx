@@ -2,6 +2,7 @@ import Image from "next/image";
 import fs from "fs";
 import path from "path";
 import BlogContent from "./BlogContent";
+import { generateSummary } from '@/utils/summary';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,9 +35,9 @@ function getArticles() {
     // 从文件名中提取标题（移除.md后缀）
     const title = file.replace('.md', '');
     
-    // 读取文件内容以提取摘要（取前100个字符）
+    // 读取文件内容以提取摘要
     const content = getMarkdownContent(file);
-    const summary = content.substring(0, 100).trim() + '...';
+    const summary = generateSummary(content);
     
     // 使用当前日期作为默认日期
     const date = new Date().toISOString().split('T')[0];
