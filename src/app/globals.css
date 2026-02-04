@@ -114,24 +114,137 @@ body {
 }
 
 /* 深色模式适配 */
-.dark .prose {
+.dark .prose,
+[theme-mode='dark'] .prose {
   color: var(--foreground);
 }
 
-.dark .prose code {
+.dark .prose code,
+[theme-mode='dark'] .prose code {
   background-color: rgba(175, 184, 193, 0.1);
 }
 
-.dark .prose pre {
+.dark .prose pre,
+[theme-mode='dark'] .prose pre {
   background-color: rgba(17, 24, 39, 0.5);
 }
 
-.dark .prose th {
+.dark .prose th,
+[theme-mode='dark'] .prose th {
   background-color: rgba(175, 184, 193, 0.05);
 }
 
 .dark .prose th,
-.dark .prose td {
+.dark .prose td,
+[theme-mode='dark'] .prose th,
+[theme-mode='dark'] .prose td {
   border-color: rgba(175, 184, 193, 0.2);
+}
+
+/* 主题模式适配 */
+[theme-mode='dark'] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+[theme-mode='dark'] body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* 组件主题适配 */
+[theme-mode='dark'] .bg-white {
+  background-color: #1f2937;
+}
+
+[theme-mode='dark'] .bg-zinc-50 {
+  background-color: #111827;
+}
+
+[theme-mode='dark'] .text-gray-600 {
+  color: #d1d5db;
+}
+
+[theme-mode='dark'] .text-gray-500 {
+  color: #9ca3af;
+}
+
+[theme-mode='dark'] .border-gray-300 {
+  border-color: #374151;
+}
+
+[theme-mode='dark'] .bg-gray-200 {
+  background-color: #374151;
+}
+
+[theme-mode='dark'] .hover\:bg-green-50:hover {
+  background-color: #065f46;
+}
+
+[theme-mode='dark'] .hover\:text-green-600:hover {
+  color: #10b981;
+}
+
+[theme-mode='dark'] .bg-green-50 {
+  background-color: #065f46;
+}
+
+[theme-mode='dark'] .text-green-600 {
+  color: #10b981;
+}
+
+[theme-mode='dark'] .focus\:ring-blue-500:focus {
+  ring-color: #3b82f6;
+}
+
+[theme-mode='dark'] .bg-blue-500 {
+  background-color: #3b82f6;
+}
+
+[theme-mode='dark'] .bg-yellow-200 {
+  background-color: #d97706;
+  color: #fef3c7;
+}
+
+/* Markdown 暗色模式 */
+[theme-mode='dark'] .markdown-body {
+  background-color: #1f2937;
+  color: #d1d5db;
+}
+
+[theme-mode='dark'] .markdown-body h1,
+[theme-mode='dark'] .markdown-body h2,
+[theme-mode='dark'] .markdown-body h3,
+[theme-mode='dark'] .markdown-body h4,
+[theme-mode='dark'] .markdown-body h5,
+[theme-mode='dark'] .markdown-body h6 {
+  color: #f3f4f6;
+}
+
+[theme-mode='dark'] .markdown-body code {
+  background-color: #374151;
+  color: #f3f4f6;
+}
+
+[theme-mode='dark'] .markdown-body pre {
+  background-color: #111827;
+  color: #f3f4f6;
+}
+
+[theme-mode='dark'] .markdown-body pre code {
+  background-color: transparent;
+}
+
+[theme-mode='dark'] .markdown-body table {
+  color: #d1d5db;
+}
+
+[theme-mode='dark'] .markdown-body th {
+  background-color: #374151;
+}
+
+[theme-mode='dark'] .markdown-body th,
+[theme-mode='dark'] .markdown-body td {
+  border-color: #374151;
 }
 
