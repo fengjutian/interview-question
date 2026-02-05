@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { FloatButton, SideSheet } from '@douyinfe/semi-ui';
 import { IconAIEditLevel1 } from '@douyinfe/semi-icons';
 import { MarkdownRenderer } from "../components/MarkdownRenderer";
@@ -31,28 +31,45 @@ export default function BlogContent({ articles, articleContents }: BlogContentPr
   const [sideSheetVisible, setSideSheetVisible] = useState(false);
   // 状态管理：当前选中的分类
   const [selectedCategory, setSelectedCategory] = useState('全部');
+  // 状态管理：防抖搜索关键词
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   
   const markdownContent = articleContents[selectedArticle.file];
   
   // 提取所有唯一的分类
   const categories = ['全部', ...Array.from(new Set(articles.map(article => article.category)))];
   
+  // 防抖处理
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+  
   // 根据分类和搜索关键词筛选文章
   const filteredArticles = articles.filter(article => {
     const matchesCategory = selectedCategory === '全部' || article.category === selectedCategory;
-    const matchesSearch = !searchTerm || 
-      article.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      article.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesSearch = !debouncedSearchTerm || 
+      article.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || 
+      article.summary.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      article.tags.some(tag => tag.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
     return matchesCategory && matchesSearch;
   });
   
   // 高亮显示搜索结果
   const highlightSearchResults = (content: string) => {
-    if (!searchTerm) return content;
+    if (!debouncedSearchTerm) return content;
     
-    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    const regex = new RegExp(`(${debouncedSearchTerm})`, 'gi');
     return content.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
+  };
+
+  // 清除搜索
+  const clearSearch = () => {
+    setSearchTerm('');
+    setDebouncedSearchTerm('');
   };
 
    const onClick = () => {
@@ -66,13 +83,32 @@ export default function BlogContent({ articles, articleContents }: BlogContentPr
         
         {/* 搜索框 */}
         <div className="mb-6">
-          <input
-            type="text"
-            placeholder="搜索内容..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="搜索内容..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {/* 搜索图标 */}
+            <div className="absolute left-3 top-2.5 text-gray-400">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            {/* 清除按钮 */}
+            {searchTerm && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
         
         {/* 分类筛选 */}
