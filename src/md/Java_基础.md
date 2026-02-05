@@ -81,3 +81,4 @@ StringBuffer 和 StringBuilder 最大的区别在于，StringBuffer 是线程安
 - Files.size()：查看文件个数。
 - Files.read()：读取文件。
 - Files.write()：写入文件。
+
