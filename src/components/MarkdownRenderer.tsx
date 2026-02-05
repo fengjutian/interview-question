@@ -35,8 +35,17 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, the
     );
   };
 
-  // 自定义渲染器，处理文本高亮
+  // 自定义渲染器，处理文本高亮和图片路径
   const components = {
+    img: (props: any) => {
+      const { src, alt, title } = props;
+      // 处理图片路径，将相对路径转换为绝对路径
+      let imgSrc = src;
+      if (src && src.startsWith('imgs/')) {
+        imgSrc = `/imgs/${src.substring(5)}`;
+      }
+      return <img src={imgSrc} alt={alt} title={title} className="max-w-full h-auto rounded" />;
+    },
     p: (props: any) => {
       const { children } = props;
       const highlightedChildren = Array.isArray(children) 
