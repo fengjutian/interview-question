@@ -35,6 +35,25 @@ const handleClick = useCallback(() => {
 const expensiveValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
 ```
 
+### useImperativeHandle：自定义暴露给父组件的实例值
+```jsx
+useImperativeHandle(ref, () => ({
+  focus: () => inputRef.current.focus()
+}));
+```
+
+### useDebugValue：在React DevTools中显示自定义Hook的调试信息
+```jsx
+useDebugValue(count > 0 ? '已点击' : '未点击');
+```
+
+### useLayoutEffect：在DOM更新后同步执行副作用
+```jsx
+useLayoutEffect(() => {
+  // 同步执行布局相关操作
+}, [dependencies]);
+```
+
 ### useRef：保存可变值，访问DOM元素
 ```jsx
 const inputRef = useRef(null);
@@ -103,3 +122,8 @@ const memoizedValue = useMemo(() => {
 ```
 
 区别：React.memo用于整个组件的记忆化，而useMemo用于特定计算结果的记忆化。
+
+## useEffect VS useLayoutEffect
+useEffect 在 React 的渲染过程中是被异步调用的，用于绝大多数场景；useLayoutEffect 会在所有的 DOM 变更之后同步调用，主要用于处理 DOM 操作、调整样式、避免页面闪烁等问题。也正因为是同步处理，所以需要避免在 useLayoutEffect 做计算量较大的耗时任务从而造成阻塞。
+
+useEffect 是按照顺序执行代码的，改变屏幕像素之后执行（先渲染，后改变DOM），当改变屏幕内容时可能会产生闪烁；useLayoutEffect 是改变屏幕像素之前就执行了（会推迟页面显示的事件，先改变DOM后渲染），不会产生闪烁。useLayoutEffect总是比useEffect先执行。
