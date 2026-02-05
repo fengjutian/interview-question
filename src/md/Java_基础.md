@@ -1,3 +1,11 @@
+---
+title: Java 基础
+category: Java
+tags: [Java, 基础, 面试题]
+description: Java 基础知识总结，包括 JDK 和 JRE 的区别、== 和 equals 的区别、final 的作用等核心概念
+date: 2026-02-05
+---
+
 ## JDK 和 JRE 有什么区别？
 
 - JDK：Java Development Kit 的简称，java 开发工具包，提供了 java 的开发环境和运行环境。

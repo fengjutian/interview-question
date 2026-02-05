@@ -1,3 +1,11 @@
+---
+title: Markdown 渲染示例
+category: 示例
+tags: [Markdown, 示例, 渲染]
+description: 使用 React Markdown 渲染的示例页面，展示了基本 Markdown 语法、代码高亮、列表、链接、表格和引用等特性
+date: 2026-02-05
+---
+
 # Markdown 渲染示例
 
 这是一个使用 React Markdown 渲染的示例页面。

@@ -1,3 +1,11 @@
+---
+title: Redux 与 React-Redux 工作原理
+category: React
+tags: [React, Redux, 状态管理]
+description: Redux 与 React-Redux 的工作原理详解，包括核心概念、工作流程和使用方法
+date: 2026-02-05
+---
+
 ##  Redux与React-Redux的工作原理
 ### Redux核心概念：
 - Store：存储应用状态的容器

@@ -1,3 +1,11 @@
+---
+title: Next.js 入门指南
+category: Next.js
+tags: [Next.js, React, 前端框架]
+description: Next.js 入门指南，包括基本概念、主要特性、快速开始、项目结构、路由系统和部署等内容
+date: 2026-02-05
+---
+
 # Next.js 入门指南
 
 ## 什么是 Next.js？

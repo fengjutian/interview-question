@@ -1,3 +1,11 @@
+---
+title: React 组件开发
+category: React
+tags: [React, 组件, 开发]
+description: React 组件开发指南，包括组件类型、props、状态管理、生命周期、样式和最佳实践
+date: 2026-02-05
+---
+
 # React 组件开发
 
 ## 什么是 React 组件？

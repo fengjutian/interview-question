@@ -1,3 +1,11 @@
+---
+title: React 虚拟DOM 详解
+category: React
+tags: [React, 虚拟DOM, 渲染流程]
+description: React 虚拟DOM详解，包括虚拟DOM的定义、工作原理以及React组件的渲染流程
+date: 2026-02-05
+---
+
 ## 虚拟DOM是什么？解释其工作原理
 
 虚拟DOM(Virtual DOM)是React中的核心概念，是对实际DOM的一种轻量级JavaScript对象表示。
@@ -30,11 +38,13 @@ React组件从渲染到呈现的完整流程：
 
 
 
+
 3. 协调过程：
 
 - 生成新的虚拟DOM树
 - 与旧树进行Diff比较
 - 标记需要进行的DOM操作
+
 
 
 

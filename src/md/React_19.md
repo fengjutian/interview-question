@@ -1,3 +1,11 @@
+---
+title: React 19的新特性与变化
+category: React
+tags: [React, React 19, 新特性]
+description: React 19的新特性与变化，包括服务端组件、并发模式增强、异步操作优化等核心更新
+date: 2026-02-05
+---
+
 ## React 19的新特性与变化
 ### Server Components（服务端组件）
 

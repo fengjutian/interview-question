@@ -12,6 +12,7 @@ interface Article {
   summary: string;
   file: string;
   category: string;
+  tags: string[];
 }
 
 interface BlogContentProps {
@@ -41,7 +42,8 @@ export default function BlogContent({ articles, articleContents }: BlogContentPr
     const matchesCategory = selectedCategory === '全部' || article.category === selectedCategory;
     const matchesSearch = !searchTerm || 
       article.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      article.summary.toLowerCase().includes(searchTerm.toLowerCase());
+      article.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchesCategory && matchesSearch;
   });
   
@@ -111,6 +113,15 @@ export default function BlogContent({ articles, articleContents }: BlogContentPr
             </div>
             <p className="text-sm text-gray-500">{article.date}</p>
             <p className="text-sm text-gray-600">{article.summary}</p>
+            {article.tags && article.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {article.tags.map((tag, index) => (
+                  <span key={index} className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>

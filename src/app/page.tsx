@@ -5,10 +5,48 @@ import BlogContent from "./BlogContent";
 import { generateSummary } from '@/utils/summary';
 import SettingsClient from "./SettingsClient";
 
+// 解析YAML front matter
+function parseFrontMatter(content: string) {
+  const frontMatterRegex = /^---\n([\s\S]*?)\n---\n/;
+  const match = frontMatterRegex.exec(content);
+  
+  if (!match) {
+    return { frontMatter: {}, content };
+  }
+  
+  const frontMatterContent = match[1];
+  const contentWithoutFrontMatter = content.replace(frontMatterRegex, "");
+  
+  // 简单解析YAML
+  const frontMatter = frontMatterContent.split("\n").reduce((acc, line) => {
+    const [key, ...valueParts] = line.split(": ");
+    if (key && valueParts.length > 0) {
+      const value = valueParts.join(": ").trim();
+      // 处理数组类型
+      if (value.startsWith("[") && value.endsWith("]")) {
+        // 简单解析YAML数组，处理没有双引号的字符串
+        const arrayContent = value.substring(1, value.length - 1).trim();
+        if (arrayContent) {
+          acc[key.trim()] = arrayContent.split(",").map(item => item.trim());
+        } else {
+          acc[key.trim()] = [];
+        }
+      } else {
+        acc[key.trim()] = value;
+      }
+    }
+    return acc;
+  }, {} as Record<string, any>);
+  
+  return { frontMatter, content: contentWithoutFrontMatter };
+}
+
 // 从src/md目录读取Markdown文件内容
 function getMarkdownContent(fileName: string): string {
   const markdownPath = path.join(process.cwd(), "src", "md", fileName);
-  return fs.readFileSync(markdownPath, "utf8");
+  const content = fs.readFileSync(markdownPath, "utf8");
+  const { content: contentWithoutFrontMatter } = parseFrontMatter(content);
+  return contentWithoutFrontMatter;
 }
 
 // 自动读取src/md目录下的所有Markdown文件
@@ -42,20 +80,28 @@ function getArticles() {
       title = title.substring(underscoreIndex + 1);
     }
     
-    // 读取文件内容以提取摘要
-    const content = getMarkdownContent(file);
-    const summary = generateSummary(content);
+    // 读取文件内容
+    const markdownPath = path.join(process.cwd(), "src", "md", file);
+    const fileContent = fs.readFileSync(markdownPath, "utf8");
     
-    // 使用当前日期作为默认日期
-    const date = new Date().toISOString().split('T')[0];
+    // 解析YAML front matter
+    const { frontMatter, content } = parseFrontMatter(fileContent);
+    
+    // 优先使用YAML front matter中的数据
+    const articleTitle = frontMatter.title || title;
+    const articleDate = frontMatter.date || new Date().toISOString().split('T')[0];
+    const articleSummary = frontMatter.description || generateSummary(content);
+    const articleTags = frontMatter.tags || [];
+    const articleCategory = frontMatter.category || category;
     
     return {
       id: index + 1,
-      title,
-      date,
-      summary,
+      title: articleTitle,
+      date: articleDate,
+      summary: articleSummary,
       file,
-      category
+      category: articleCategory,
+      tags: articleTags
     };
   });
 }

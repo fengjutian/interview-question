@@ -1,3 +1,11 @@
+---
+title: React Hooks 详解
+category: React
+tags: [React, Hooks, 状态管理]
+description: React 常用 Hooks 详解，包括 useState、useEffect、useContext、useReducer 等核心 Hooks 的使用场景和示例
+date: 2026-02-05
+---
+
 ## 常用Hooks及其使用场景
 
 ### useState：管理组件状态

@@ -1,3 +1,11 @@
+---
+title: React JSX 详解
+category: React
+tags: [React, JSX, 语法]
+description: React JSX 详解，包括 JSX 的定义、优势以及编译过程
+date: 2026-02-05
+---
+
 ## 什么是JSX？为什么使用它？
 JSX是JavaScript的语法扩展，允许在JavaScript中编写类似HTML的代码。
 ```jsx
