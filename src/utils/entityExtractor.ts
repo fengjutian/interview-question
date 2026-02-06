@@ -72,6 +72,7 @@ export interface GraphData {
 // 技术术语库
 const TECH_TERMS = {
   frameworks: [
+    "qiankun",
     "React", "Vue", "Angular", "Next.js", "Nuxt.js", "Svelte", "Gatsby",
     "Express", "Koa", "NestJS", "Fastify", "Flutter", "React Native"
   ],
@@ -164,16 +165,70 @@ function extractEntitiesFromFile(filePath: string): { entities: Entity[], relati
     });
   });
   
-  // 提取关系（简单实现：同一文件中的实体之间存在关系）
+  // 提取关系（根据实体类型生成更有意义的关系类型）
   const relationships: Relationship[] = [];
   const entityIds = Array.from(entityMap.keys());
   
+  // 创建实体ID到类型的映射
+  const entityTypeMap = new Map<string, string>();
+  entityMap.forEach((entity) => {
+    entityTypeMap.set(entity.id, entity.type);
+  });
+  
+  // 定义关系类型映射
+  const relationshipTypes: Record<string, Record<string, string>> = {
+    frameworks: {
+      languages: "written-in",
+      concepts: "uses",
+      tools: "built-with",
+      patterns: "implements",
+      frameworks: "related-to"
+    },
+    concepts: {
+      languages: "applied-in",
+      concepts: "related-to",
+      tools: "used-by",
+      frameworks: "used-in",
+      patterns: "related-to"
+    },
+    languages: {
+      languages: "related-to",
+      frameworks: "used-by",
+      concepts: "supports",
+      tools: "used-with",
+      patterns: "implements"
+    },
+    tools: {
+      languages: "works-with",
+      frameworks: "builds",
+      concepts: "supports",
+      tools: "integrates-with",
+      patterns: "supports"
+    },
+    patterns: {
+      languages: "implemented-in",
+      frameworks: "used-by",
+      concepts: "related-to",
+      tools: "used-with",
+      patterns: "related-to"
+    }
+  };
+  
   for (let i = 0; i < entityIds.length; i++) {
     for (let j = i + 1; j < entityIds.length; j++) {
+      const sourceType = entityTypeMap.get(entityIds[i]);
+      const targetType = entityTypeMap.get(entityIds[j]);
+      
+      // 生成关系类型
+      let relationshipType = "related";
+      if (sourceType && targetType && relationshipTypes[sourceType] && relationshipTypes[sourceType][targetType]) {
+        relationshipType = relationshipTypes[sourceType][targetType];
+      }
+      
       relationships.push({
         source: entityIds[i],
         target: entityIds[j],
-        type: "related",
+        type: relationshipType,
         strength: 1
       });
     }
@@ -240,7 +295,8 @@ export function generateKnowledgeGraph(): GraphData {
   const links = allRelationships.map(rel => ({
     source: rel.source,
     target: rel.target,
-    value: rel.strength
+    value: rel.strength,
+    label: rel.type
   }));
 
   
@@ -276,7 +332,8 @@ export function generateKnowledgeGraphForFile(filePath: string): GraphData {
   const links = relationships.map(rel => ({
     source: rel.source,
     target: rel.target,
-    value: rel.strength
+    value: rel.strength,
+    label: rel.type
   }));
 
   

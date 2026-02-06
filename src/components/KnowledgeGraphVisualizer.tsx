@@ -15,6 +15,7 @@ interface KnowledgeGraphVisualizerProps {
       source: string;
       target: string;
       value: number;
+      label?: string;
     }>;
   };
   width?: number;
@@ -77,6 +78,35 @@ export const KnowledgeGraphVisualizer: React.FC<KnowledgeGraphVisualizerProps> =
       .attr('stroke-dasharray', (d) => d.value > 1 ? '5,5' : 'none')
       .style('transition', 'stroke 0.3s ease');
 
+    // 绘制关系标签
+    const linkLabel = g.append('g')
+      .selectAll('text')
+      .data(data.links)
+      .enter().append('text')
+      .attr('font-size', '10px')
+      .attr('font-family', 'Arial, sans-serif')
+      .attr('fill', '#666')
+      .attr('text-anchor', 'middle')
+      .attr('pointer-events', 'none')
+      .text((d) => d.label || '');
+
+    // 更新力导向图
+    simulation.on('tick', () => {
+      link
+        .attr('x1', (d: any) => d.source.x)
+        .attr('y1', (d: any) => d.source.y)
+        .attr('x2', (d: any) => d.target.x)
+        .attr('y2', (d: any) => d.target.y);
+
+      node
+        .attr('transform', (d: any) => `translate(${d.x},${d.y})`);
+
+      // 更新关系标签位置
+      linkLabel
+        .attr('x', (d: any) => (d.source.x + d.target.x) / 2)
+        .attr('y', (d: any) => (d.source.y + d.target.y) / 2 - 10);
+    });
+
     // 绘制节点
     const node = g.append('g')
       .selectAll('.node')
@@ -137,6 +167,14 @@ export const KnowledgeGraphVisualizer: React.FC<KnowledgeGraphVisualizerProps> =
         return l.source.id === nodeId || l.target.id === nodeId ? Math.sqrt(l.value) * 1.2 : Math.sqrt(l.value) * 0.8;
       });
       
+      // 高亮相关关系标签
+      linkLabel.style('opacity', (l: any) => {
+        return l.source.id === nodeId || l.target.id === nodeId ? 1 : 0.2;
+      })
+      .style('font-weight', (l: any) => {
+        return l.source.id === nodeId || l.target.id === nodeId ? 'bold' : 'normal';
+      });
+      
       // 高亮相关节点
       node.style('opacity', (n: any) => {
         // 检查是否与当前节点有链接
@@ -162,6 +200,10 @@ export const KnowledgeGraphVisualizer: React.FC<KnowledgeGraphVisualizerProps> =
       link.style('stroke-opacity', 0.6)
         .style('stroke-width', (d) => Math.sqrt(d.value) * 0.8);
       
+      // 恢复关系标签状态
+      linkLabel.style('opacity', 1)
+        .style('font-weight', 'normal');
+      
       // 恢复所有节点状态
       node.style('opacity', 1);
     });
@@ -175,17 +217,7 @@ export const KnowledgeGraphVisualizer: React.FC<KnowledgeGraphVisualizerProps> =
       .attr('opacity', 1)
       .attr('transform', (d: any) => `translate(${d.x}, ${d.y})`);
 
-    // 更新力导向图
-    simulation.on('tick', () => {
-      link
-        .attr('x1', (d: any) => d.source.x)
-        .attr('y1', (d: any) => d.source.y)
-        .attr('x2', (d: any) => d.target.x)
-        .attr('y2', (d: any) => d.target.y);
 
-      node
-        .attr('transform', (d: any) => `translate(${d.x},${d.y})`);
-    });
 
     // 拖拽函数
     function dragstarted(event: any) {

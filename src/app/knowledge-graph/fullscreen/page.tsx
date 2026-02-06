@@ -1,6 +1,6 @@
 import React from "react";
 import { generateKnowledgeGraph, getMarkdownFileList, generateKnowledgeGraphForFile } from "@/utils/entityExtractor";
-import KnowledgeGraphClient from "../KnowledgeGraphClient";
+import FullscreenKnowledgeGraphClient from "./FullscreenKnowledgeGraphClient";
 
 // 生成知识图谱数据
 const allFilesGraphData = generateKnowledgeGraph();
@@ -18,22 +18,11 @@ const fileGraphDataMap = fileList.reduce((acc, file) => {
 export default function FullscreenKnowledgeGraph() {
   return (
     <div className="h-screen w-screen bg-white flex flex-col">
-      <div className="p-6 flex justify-between items-center border-b">
-        <h1 className="text-2xl font-bold text-gray-800">知识图谱 - 全屏模式</h1>
-        <button
-          onClick={() => window.close()}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium transition-colors"
-        >
-          关闭窗口
-        </button>
-      </div>
-      <div className="flex-grow p-6 overflow-auto">
-        <KnowledgeGraphClient
-          allFilesGraphData={allFilesGraphData}
-          fileGraphDataMap={fileGraphDataMap}
-          fileList={fileList}
-        />
-      </div>
+      <FullscreenKnowledgeGraphClient
+        allFilesGraphData={allFilesGraphData}
+        fileGraphDataMap={fileGraphDataMap}
+        fileList={fileList}
+      />
     </div>
   );
 }
