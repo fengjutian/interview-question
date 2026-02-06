@@ -246,3 +246,50 @@ export function generateKnowledgeGraph(): GraphData {
   
   return { nodes, links };
 }
+
+// 为单个文件生成知识图谱数据
+export function generateKnowledgeGraphForFile(filePath: string): GraphData {
+  // 验证文件是否存在且是Markdown文件
+  if (!fs.existsSync(filePath) || !filePath.endsWith('.md')) {
+    return { nodes: [], links: [] };
+  }
+  
+  // 提取文件中的实体和关系
+  const { entities, relationships } = extractEntitiesFromFile(filePath);
+  
+  // 生成节点和链接
+  const typeGroups = {
+    frameworks: 1,
+    concepts: 2,
+    languages: 3,
+    tools: 4,
+    patterns: 5
+  };
+  
+  const nodes = entities.map(entity => ({
+    id: entity.id,
+    label: entity.label,
+    group: typeGroups[entity.type as keyof typeof typeGroups] || 0,
+    size: Math.min(entity.occurrences * 2, 20) // 限制最大尺寸
+  }));
+  
+  const links = relationships.map(rel => ({
+    source: rel.source,
+    target: rel.target,
+    value: rel.strength
+  }));
+
+  
+  return { nodes, links };
+}
+
+// 获取所有Markdown文件列表
+export function getMarkdownFileList(): string[] {
+  const mdDirectory = path.join(process.cwd(), "src", "md");
+  const markdownFiles = getMarkdownFiles(mdDirectory);
+  
+  // 转换为相对路径
+  return markdownFiles.map(filePath => {
+    return path.relative(mdDirectory, filePath);
+  });
+}
