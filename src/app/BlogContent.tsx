@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { FloatButton, SideSheet } from '@douyinfe/semi-ui';
 import { IconAIEditLevel1 } from '@douyinfe/semi-icons';
 import { MarkdownRenderer } from "../components/MarkdownRenderer";
+import KnowledgeGraphClient from "./knowledge-graph/KnowledgeGraphClient";
 
 interface Article {
   id: number;
@@ -18,9 +19,24 @@ interface Article {
 interface BlogContentProps {
   articles: Article[];
   articleContents: Record<string, string>;
+  graphData: {
+    nodes: Array<{
+      id: string;
+      label: string;
+      group: number;
+      size?: number;
+    }>;
+    links: Array<{
+      source: string;
+      target: string;
+      value: number;
+    }>;
+  };
+  fileList: string[];
+  fileGraphDataMap: Record<string, any>;
 }
 
-export default function BlogContent({ articles, articleContents }: BlogContentProps) {
+export default function BlogContent({ articles, articleContents, graphData, fileList, fileGraphDataMap }: BlogContentProps) {
   // 状态管理：当前选中的文章
   const [selectedArticle, setSelectedArticle] = useState(articles[0]);
   // 状态管理：当前主题
@@ -29,6 +45,8 @@ export default function BlogContent({ articles, articleContents }: BlogContentPr
   const [searchTerm, setSearchTerm] = useState('');
   // 状态管理：侧边栏可见性
   const [sideSheetVisible, setSideSheetVisible] = useState(false);
+  // 状态管理：知识图谱侧边栏可见性
+  const [knowledgeGraphVisible, setKnowledgeGraphVisible] = useState(false);
   // 状态管理：当前选中的分类
   const [selectedCategory, setSelectedCategory] = useState('全部');
   // 状态管理：防抖搜索关键词
@@ -175,11 +193,13 @@ export default function BlogContent({ articles, articleContents }: BlogContentPr
           </div>
         )}
       </div>
-      <FloatButton icon={<IconAIEditLevel1 />} style={{ bottom: '20px' }} onClick={onClick}/>
+
+      <FloatButton icon={<IconAIEditLevel1 />} style={{ bottom: '20px' }} onClick={() => setSideSheetVisible(true)}/>
+      <FloatButton icon={<IconAIEditLevel1 />} style={{ bottom: '80px' }} onClick={() => setKnowledgeGraphVisible(true)}/>
       
-      {/* 侧边栏 */}
+      {/* 原有的侧边栏 */}
       <SideSheet
-        title="AI"
+        title="AI 辅助编辑"
         visible={sideSheetVisible}
         onCancel={() => setSideSheetVisible(false)}
         width={'30%'}
@@ -198,6 +218,24 @@ export default function BlogContent({ articles, articleContents }: BlogContentPr
               <li>标题层级调整</li>
             </ul>
           </div>
+        </div>
+      </SideSheet>
+      
+      {/* 知识图谱侧边栏 */}
+      <SideSheet
+        title="知识图谱"
+        visible={knowledgeGraphVisible}
+        onCancel={() => setKnowledgeGraphVisible(false)}
+        width={'800px'}
+        placement="right"
+        mask={true}
+      >
+        <div className="p-4 h-[600px]">
+          <KnowledgeGraphClient 
+            allFilesGraphData={graphData}
+            fileGraphDataMap={fileGraphDataMap}
+            fileList={fileList}
+          />
         </div>
       </SideSheet>
     </div>

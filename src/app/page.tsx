@@ -4,6 +4,7 @@ import path from "path";
 import Link from "next/link";
 import BlogContent from "./BlogContent";
 import { generateSummary } from '@/utils/summary';
+import { generateKnowledgeGraph, generateKnowledgeGraphForFile, getMarkdownFileList } from "@/utils/entityExtractor";
 import SettingsClient from "./SettingsClient";
 
 // 解析YAML front matter
@@ -142,6 +143,20 @@ export default function Home() {
     return acc;
   }, {} as Record<string, string>);
   
+  // 生成默认图谱数据（所有文件）
+  const allFilesGraphData = generateKnowledgeGraph();
+  
+  // 获取所有Markdown文件列表
+  const fileList = getMarkdownFileList();
+  
+  // 预生成每个文件的图谱数据
+  const fileGraphDataMap = new Map<string, any>();
+  fileList.forEach(file => {
+    const fullFilePath = path.join(process.cwd(), "src", "md", file);
+    const fileGraphData = generateKnowledgeGraphForFile(fullFilePath);
+    fileGraphDataMap.set(file, fileGraphData);
+  });
+  
   return (
     <div className="flex min-h-screen bg-zinc-50">
       <main className="max-w-[1200px] mx-auto p-4">
@@ -158,7 +173,14 @@ export default function Home() {
             <SettingsClient />
           </div>
         </div>
-        <BlogContent articles={articles} articleContents={articleContents} />
+        
+        <BlogContent 
+          articles={articles} 
+          articleContents={articleContents} 
+          graphData={allFilesGraphData}
+          fileList={fileList}
+          fileGraphDataMap={Object.fromEntries(fileGraphDataMap)}
+        />
       </main>
     </div>
   );
