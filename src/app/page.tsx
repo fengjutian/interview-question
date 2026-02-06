@@ -41,6 +41,32 @@ function parseFrontMatter(content: string) {
   return { frontMatter, content: contentWithoutFrontMatter };
 }
 
+// 递归读取目录中的所有Markdown文件
+function getMarkdownFiles(dir: string): Array<{ file: string, mtime: Date }> {
+  let results: Array<{ file: string, mtime: Date }> = [];
+  const files = fs.readdirSync(dir);
+  
+  files.forEach(file => {
+    const filePath = path.join(dir, file);
+    const stats = fs.statSync(filePath);
+    
+    if (stats.isDirectory()) {
+      // 递归处理子目录
+      const subDirFiles = getMarkdownFiles(filePath);
+      results = results.concat(subDirFiles);
+    } else if (file.endsWith('.md')) {
+      // 计算相对路径（相对于src/md目录）
+      const relativePath = path.relative(path.join(process.cwd(), "src", "md"), filePath);
+      results.push({
+        file: relativePath,
+        mtime: stats.mtime
+      });
+    }
+  });
+  
+  return results;
+}
+
 // 从src/md目录读取Markdown文件内容
 function getMarkdownContent(fileName: string): string {
   const markdownPath = path.join(process.cwd(), "src", "md", fileName);
@@ -52,32 +78,31 @@ function getMarkdownContent(fileName: string): string {
 // 自动读取src/md目录下的所有Markdown文件
 function getArticles() {
   const mdDirectory = path.join(process.cwd(), "src", "md");
-  const files = fs.readdirSync(mdDirectory);
   
-  // 过滤出.md文件并获取修改时间
-  const mdFilesWithStats = files
-    .filter(file => file.endsWith('.md'))
-    .map(file => {
-      const filePath = path.join(mdDirectory, file);
-      const stats = fs.statSync(filePath);
-      return {
-        file,
-        mtime: stats.mtime
-      };
-    })
+  // 递归获取所有Markdown文件并按修改时间倒序排序
+  const mdFilesWithStats = getMarkdownFiles(mdDirectory)
     .sort((a, b) => b.mtime.getTime() - a.mtime.getTime()); // 按修改时间倒序排序
   
   // 生成文章元数据
   return mdFilesWithStats.map(({ file }, index) => {
     // 从文件名中提取标题（移除.md后缀）
-    let title = file.replace('.md', '');
+    let title = path.basename(file).replace('.md', '');
     
-    // 从文件名中提取分类信息（如 "Java_基础.md" 中的 "Java"）
+    // 从文件路径中提取分类信息（如子目录名或文件名中的前缀）
     let category = '其他';
-    const underscoreIndex = title.indexOf('_');
-    if (underscoreIndex > 0) {
-      category = title.substring(0, underscoreIndex);
-      title = title.substring(underscoreIndex + 1);
+    
+    // 检查是否在子目录中
+    const dirName = path.dirname(file);
+    if (dirName !== '.') {
+      // 使用子目录名作为分类
+      category = path.basename(dirName);
+    } else {
+      // 从文件名中提取分类信息（如 "Java_基础.md" 中的 "Java"）
+      const underscoreIndex = title.indexOf('_');
+      if (underscoreIndex > 0) {
+        category = title.substring(0, underscoreIndex);
+        title = title.substring(underscoreIndex + 1);
+      }
     }
     
     // 读取文件内容
