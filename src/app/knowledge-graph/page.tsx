@@ -2,12 +2,24 @@ import Image from "next/image";
 import Link from "next/link";
 import SettingsClient from "../SettingsClient";
 import KnowledgeGraphClient from "./KnowledgeGraphClient";
-import { generateKnowledgeGraph } from "@/utils/entityExtractor";
+import { generateKnowledgeGraph, generateKnowledgeGraphForFile, getMarkdownFileList } from "@/utils/entityExtractor";
+import path from "path";
 
 // 服务器端页面组件
 export default function KnowledgeGraph() {
+  // 获取所有Markdown文件列表
+  const fileList = getMarkdownFileList();
+  
   // 生成默认图谱数据（所有文件）
-  const graphData = generateKnowledgeGraph();
+  const allFilesGraphData = generateKnowledgeGraph();
+  
+  // 预生成每个文件的图谱数据
+  const fileGraphDataMap = new Map<string, any>();
+  fileList.forEach(file => {
+    const fullFilePath = path.join(process.cwd(), "src", "md", file);
+    const fileGraphData = generateKnowledgeGraphForFile(fullFilePath);
+    fileGraphDataMap.set(file, fileGraphData);
+  });
 
   return (
     <div className="flex min-h-screen bg-zinc-50">
@@ -35,7 +47,11 @@ export default function KnowledgeGraph() {
           </div>
           
           {/* 使用客户端组件展示图谱 */}
-          <KnowledgeGraphClient graphData={graphData} />
+          <KnowledgeGraphClient 
+            allFilesGraphData={allFilesGraphData}
+            fileGraphDataMap={Object.fromEntries(fileGraphDataMap)}
+            fileList={fileList}
+          />
         </div>
       </main>
     </div>
