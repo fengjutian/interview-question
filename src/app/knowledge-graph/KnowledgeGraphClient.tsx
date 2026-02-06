@@ -197,6 +197,17 @@ export default function KnowledgeGraphClient({ allFilesGraphData, fileGraphDataM
         >
           缩小
         </button>
+        <button
+          onClick={() => {
+            const url = new URL(window.location.href);
+            url.pathname = '/knowledge-graph/fullscreen';
+            window.open(url.toString(), '_blank');
+          }}
+          className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium transition-colors"
+          title="全屏展示"
+        >
+          全屏展示
+        </button>
         <div className="ml-auto text-sm text-gray-600">
           缩放级别: {Math.round(zoomLevel * 100)}%
         </div>

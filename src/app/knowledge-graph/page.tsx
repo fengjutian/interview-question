@@ -30,10 +30,6 @@ export default function KnowledgeGraph() {
             <h1 className="text-3xl font-semibold">知识点分析系统</h1>
           </div>
           <div className="flex items-center gap-6">
-            {/* <nav className="flex gap-4">
-              <Link href="/" className="text-gray-700 hover:text-green-600 font-medium">首页</Link>
-              <Link href="/knowledge-graph" className="text-gray-700 hover:text-green-600 font-medium">知识图谱</Link>
-            </nav> */}
             <SettingsClient />
           </div>
         </div>
