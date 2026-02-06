@@ -138,7 +138,7 @@ function extractEntitiesFromFile(filePath: string): { entities: Entity[], relati
   Object.entries(TECH_TERMS).forEach(([type, terms]) => {
     terms.forEach(term => {
       const escapedTerm = escapeRegExp(term);
-      const regex = new RegExp(`\\b${escapedTerm}\\b`, 'gi');
+      const regex = new RegExp(`(${escapedTerm})`, 'gi');
       const matches = fullContent.match(regex);
       
       if (matches) {
