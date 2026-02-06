@@ -2,27 +2,12 @@ import Image from "next/image";
 import Link from "next/link";
 import SettingsClient from "../SettingsClient";
 import KnowledgeGraphClient from "./KnowledgeGraphClient";
-import { generateKnowledgeGraph, generateKnowledgeGraphForFile, getMarkdownFileList } from "@/utils/entityExtractor";
-import path from "path";
+import { generateKnowledgeGraph } from "@/utils/entityExtractor";
 
 // 服务器端页面组件
-export default function KnowledgeGraph({ searchParams }: { searchParams?: Record<string, string> }) {
-  // 获取所有Markdown文件列表
-  const fileList = getMarkdownFileList();
-  
-  // 获取要分析的文件路径
-  const selectedFile = searchParams?.file;
-  
-  // 生成图谱数据
-  let graphData;
-  if (selectedFile) {
-    // 分析单个文件
-    const fullFilePath = path.join(process.cwd(), "src", "md", selectedFile);
-    graphData = generateKnowledgeGraphForFile(fullFilePath);
-  } else {
-    // 分析所有文件
-    graphData = generateKnowledgeGraph();
-  }
+export default function KnowledgeGraph() {
+  // 生成默认图谱数据（所有文件）
+  const graphData = generateKnowledgeGraph();
 
   return (
     <div className="flex min-h-screen bg-zinc-50">
@@ -49,45 +34,8 @@ export default function KnowledgeGraph({ searchParams }: { searchParams?: Record
             </p>
           </div>
           
-          {/* 文件选择器 */}
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">选择文件进行分析</h3>
-            <div className="flex gap-4">
-              <form action="/knowledge-graph" method="GET" className="flex gap-2">
-                <select 
-                  name="file" 
-                  className="border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  defaultValue={selectedFile || ""}
-                >
-                  <option value="">所有文件</option>
-                  {fileList.map(file => (
-                    <option key={file} value={file}>{file}</option>
-                  ))}
-                </select>
-                <button 
-                  type="submit" 
-                  className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
-                >
-                  分析
-                </button>
-              </form>
-              {selectedFile && (
-                <Link 
-                  href="/knowledge-graph" 
-                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors"
-                >
-                  查看所有文件
-                </Link>
-              )}
-            </div>
-          </div>
-          
           {/* 使用客户端组件展示图谱 */}
-          <KnowledgeGraphClient 
-            graphData={graphData} 
-            fileList={fileList}
-            selectedFile={selectedFile}
-          />
+          <KnowledgeGraphClient graphData={graphData} />
         </div>
       </main>
     </div>

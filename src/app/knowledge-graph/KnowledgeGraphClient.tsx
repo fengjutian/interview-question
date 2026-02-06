@@ -17,11 +17,9 @@ interface KnowledgeGraphClientProps {
       value: number;
     }>;
   };
-  fileList?: string[];
-  selectedFile?: string;
 }
 
-export default function KnowledgeGraphClient({ graphData, fileList, selectedFile }: KnowledgeGraphClientProps) {
+export default function KnowledgeGraphClient({ graphData }: KnowledgeGraphClientProps) {
   return (
     <div className="h-[600px] border rounded-lg overflow-hidden">
       {graphData && graphData.nodes.length > 0 ? (
