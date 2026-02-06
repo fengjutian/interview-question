@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { KnowledgeGraphVisualizer } from "@/components/KnowledgeGraphVisualizer";
 import * as d3 from "d3";
 
@@ -41,6 +41,12 @@ export default function KnowledgeGraphClient({ allFilesGraphData, fileGraphDataM
   const [currentGraphData, setCurrentGraphData] = useState(allFilesGraphData);
   // 状态管理：当前选中的颜色组
   const [selectedGroups, setSelectedGroups] = useState<Set<number>>(new Set());
+  // 状态管理：当前选中的节点
+  const [selectedNode, setSelectedNode] = useState<any>(null);
+  // 状态管理：缩放级别
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  // 状态管理：缩放行为引用
+  const zoomRef = useRef<any>(null);
 
   // 处理文件选择变化
   const handleFileChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -65,6 +71,27 @@ export default function KnowledgeGraphClient({ allFilesGraphData, fileGraphDataM
       newSelectedGroups.add(group);
     }
     setSelectedGroups(newSelectedGroups);
+  };
+
+  // 处理节点点击事件
+  const handleNodeClick = (node: any) => {
+    setSelectedNode(node);
+  };
+
+  // 重置视图
+  const resetView = () => {
+    setZoomLevel(1);
+    setSelectedNode(null);
+  };
+
+  // 放大
+  const zoomIn = () => {
+    setZoomLevel(prev => Math.min(prev * 1.2, 4));
+  };
+
+  // 缩小
+  const zoomOut = () => {
+    setZoomLevel(prev => Math.max(prev / 1.2, 0.1));
   };
 
   // 筛选图谱数据
@@ -146,6 +173,55 @@ export default function KnowledgeGraphClient({ allFilesGraphData, fileGraphDataM
           </div>
         </div>
       )}
+
+      {/* 查看工具 */}
+      <div className="mb-6 flex gap-2">
+        <button
+          onClick={resetView}
+          className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium transition-colors"
+          title="重置视图"
+        >
+          重置视图
+        </button>
+        <button
+          onClick={zoomIn}
+          className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium transition-colors"
+          title="放大"
+        >
+          放大
+        </button>
+        <button
+          onClick={zoomOut}
+          className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium transition-colors"
+          title="缩小"
+        >
+          缩小
+        </button>
+        <div className="ml-auto text-sm text-gray-600">
+          缩放级别: {Math.round(zoomLevel * 100)}%
+        </div>
+      </div>
+
+      {/* 选中节点信息 */}
+      {selectedNode && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+          <h4 className="text-md font-semibold mb-2">节点信息</h4>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <span className="font-medium">标签:</span> {selectedNode.label}
+            </div>
+            <div>
+              <span className="font-medium">组:</span> {selectedNode.group}
+            </div>
+            <div>
+              <span className="font-medium">大小:</span> {selectedNode.size || 12}
+            </div>
+            <div>
+              <span className="font-medium">ID:</span> {selectedNode.id}
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* 图谱可视化 */}
       <div className="h-[600px] border rounded-lg overflow-hidden shadow-sm">
@@ -153,7 +229,8 @@ export default function KnowledgeGraphClient({ allFilesGraphData, fileGraphDataM
           <KnowledgeGraphVisualizer 
             data={getFilteredGraphData()} 
             width={800} 
-            height={600} 
+            height={600}
+            onNodeClick={handleNodeClick}
           />
         ) : (
           <div className="flex items-center justify-center h-full text-gray-500">

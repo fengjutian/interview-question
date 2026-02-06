@@ -19,12 +19,14 @@ interface KnowledgeGraphVisualizerProps {
   };
   width?: number;
   height?: number;
+  onNodeClick?: (node: any) => void;
 }
 
 export const KnowledgeGraphVisualizer: React.FC<KnowledgeGraphVisualizerProps> = ({
   data,
   width = 800,
-  height = 600
+  height = 600,
+  onNodeClick
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const legendRef = useRef<HTMLDivElement>(null);
@@ -39,7 +41,20 @@ export const KnowledgeGraphVisualizer: React.FC<KnowledgeGraphVisualizerProps> =
     const svg = d3.select(svgRef.current)
       .attr('width', width)
       .attr('height', height)
-      .attr('class', 'bg-gray-50 rounded-lg');
+      .attr('class', 'bg-gray-50 rounded-lg cursor-grab active:cursor-grabbing');
+
+    // 创建缩放行为
+    const zoom = d3.zoom<any, any>()
+      .scaleExtent([0.1, 4])
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform);
+      });
+
+    // 应用缩放行为
+    svg.call(zoom as any);
+
+    // 创建 g 元素作为所有内容的容器
+    const g = svg.append('g');
 
     // 创建力导向图
     const simulation = d3.forceSimulation(data.nodes as any)
@@ -52,7 +67,7 @@ export const KnowledgeGraphVisualizer: React.FC<KnowledgeGraphVisualizerProps> =
     const color = d3.scaleOrdinal(d3.schemeCategory10);
 
     // 绘制连接线
-    const link = svg.append('g')
+    const link = g.append('g')
       .selectAll('line')
       .data(data.links)
       .enter().append('line')
@@ -63,7 +78,7 @@ export const KnowledgeGraphVisualizer: React.FC<KnowledgeGraphVisualizerProps> =
       .style('transition', 'stroke 0.3s ease');
 
     // 绘制节点
-    const node = svg.append('g')
+    const node = g.append('g')
       .selectAll('.node')
       .data(data.nodes)
       .enter().append('g')
@@ -72,6 +87,14 @@ export const KnowledgeGraphVisualizer: React.FC<KnowledgeGraphVisualizerProps> =
         .on('start', dragstarted)
         .on('drag', dragged)
         .on('end', dragended));
+
+    // 添加节点点击事件
+    node.on('click', function(event, d) {
+      event.stopPropagation();
+      if (onNodeClick) {
+        onNodeClick(d);
+      }
+    });
 
     // 添加节点圆圈
     node.append('circle')

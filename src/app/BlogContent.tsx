@@ -226,7 +226,7 @@ export default function BlogContent({ articles, articleContents, graphData, file
         title="知识图谱"
         visible={knowledgeGraphVisible}
         onCancel={() => setKnowledgeGraphVisible(false)}
-        width={'800px'}
+        width={'1000px'}
         placement="right"
         mask={true}
       >
