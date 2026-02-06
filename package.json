@@ -12,6 +12,8 @@
     "@douyinfe/semi-icons": "^2.90.13",
     "@douyinfe/semi-ui": "^2.90.13",
     "@tailwindcss/typography": "^0.5.19",
+    "@types/d3": "^7.4.3",
+    "d3": "^7.9.0",
     "github-markdown-css": "^5.8.1",
     "highlight.js": "^11.10.0",
     "markdown-css": "^0.0.3",

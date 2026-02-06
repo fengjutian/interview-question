@@ -1,6 +1,7 @@
 import Image from "next/image";
 import fs from "fs";
 import path from "path";
+import Link from "next/link";
 import BlogContent from "./BlogContent";
 import { generateSummary } from '@/utils/summary';
 import SettingsClient from "./SettingsClient";
@@ -147,9 +148,15 @@ export default function Home() {
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-4">
             <Image src="/next.svg" alt="Logo" width={100} height={20} />
-            <h1 className="text-3xl font-semibold">博客</h1>
+            <h1 className="text-3xl font-semibold">知识点分析系统</h1>
           </div>
-          <SettingsClient />
+          <div className="flex items-center gap-6">
+            <nav className="flex gap-4">
+              <Link href="/" className="text-gray-700 hover:text-green-600 font-medium">首页</Link>
+              <Link href="/knowledge-graph" className="text-gray-700 hover:text-green-600 font-medium">知识图谱</Link>
+            </nav>
+            <SettingsClient />
+          </div>
         </div>
         <BlogContent articles={articles} articleContents={articleContents} />
       </main>
