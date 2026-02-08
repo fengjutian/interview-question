@@ -77,6 +77,59 @@ function getMarkdownContent(fileName: string): string {
   return contentWithoutFrontMatter;
 }
 
+// 生成文件目录树数据
+function generateFileTree(dir: string, basePath: string = '', keyPrefix: string = ''): Array<{
+  label: string;
+  value: string;
+  key: string;
+  children?: Array<{
+    label: string;
+    value: string;
+    key: string;
+    children?: any[];
+  }>;
+}> {
+  const tree: Array<{
+    label: string;
+    value: string;
+    key: string;
+    children?: any[];
+  }> = [];
+  
+  const files = fs.readdirSync(dir);
+  let keyIndex = 0;
+  
+  files.forEach(file => {
+    const filePath = path.join(dir, file);
+    const stats = fs.statSync(filePath);
+    const relativePath = path.join(basePath, file);
+    const currentKey = keyPrefix ? `${keyPrefix}-${keyIndex}` : `${keyIndex}`;
+    
+    if (stats.isDirectory()) {
+      // 处理目录
+      const directoryNode = {
+        label: file,
+        value: relativePath,
+        key: currentKey,
+        children: generateFileTree(filePath, relativePath, currentKey)
+      };
+      tree.push(directoryNode);
+    } else if (file.endsWith('.md')) {
+      // 处理Markdown文件
+      const fileNode = {
+        label: file.replace('.md', ''),
+        value: relativePath,
+        key: currentKey
+      };
+      tree.push(fileNode);
+    }
+    
+    keyIndex++;
+  });
+  
+  return tree;
+}
+
 // 自动读取src/md目录下的所有Markdown文件
 function getArticles() {
   const mdDirectory = path.join(process.cwd(), "src", "md");
@@ -157,9 +210,13 @@ export default function Home() {
     fileGraphDataMap.set(file, fileGraphData);
   });
   
+  // 生成文件目录树数据
+  const mdDirectory = path.join(process.cwd(), "src", "md");
+  const fileTreeData = generateFileTree(mdDirectory);
+  
   return (
     <div className="flex min-h-screen bg-zinc-50">
-      <main className="max-w-[1200px] mx-auto p-4">
+      <main className="max-w-[1500px] mx-auto p-4">
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-4">
             <Image src="/next.svg" alt="Logo" width={100} height={20} />
@@ -180,6 +237,7 @@ export default function Home() {
           graphData={allFilesGraphData}
           fileList={fileList}
           fileGraphDataMap={Object.fromEntries(fileGraphDataMap)}
+          fileTreeData={fileTreeData}
         />
       </main>
     </div>
