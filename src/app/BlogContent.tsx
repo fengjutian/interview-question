@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FloatButton, SideSheet, Tree } from '@douyinfe/semi-ui';
+import { FloatButton, SideSheet, Tree, Modal, Input } from '@douyinfe/semi-ui';
 import { IconAIEditLevel1, IconSourceControl } from '@douyinfe/semi-icons';
-import { MarkdownRenderer } from "../components/MarkdownRenderer";
-import KnowledgeGraphClient from "./knowledge-graph/KnowledgeGraphClient";
+import { MarkdownRenderer } from "../components/MarkdownRenderer.js";
+import KnowledgeGraphClient from "./knowledge-graph/KnowledgeGraphClient.js";
 
 interface Article {
   id: number;
@@ -60,11 +60,174 @@ export default function BlogContent({ articles, articleContents, graphData, file
   // 状态管理：防抖搜索关键词
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   
+  // 状态管理：目录树数据
+  const [treeData, setTreeData] = useState(fileTreeData);
+
+  // 对话框状态
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogType, setDialogType] = useState<'addRootFolder' | 'addFolder' | 'addFile' | 'rename'>('addRootFolder');
+  const [dialogLabel, setDialogLabel] = useState('');
+  const [inputValue, setInputValue] = useState('');
+  const [targetNodeKey, setTargetNodeKey] = useState<string | null>(null);
+  const [currentLabel, setCurrentLabel] = useState('');
+
+  // 同步目录树数据
+  React.useEffect(() => {
+    setTreeData(fileTreeData);
+  }, [fileTreeData]);
+  
   const markdownContent = articleContents[selectedArticle.file];
   
   // 提取所有唯一的分类
   const categories = ['全部', ...Array.from(new Set(articles.map(article => article.category)))];
-  
+
+  // 目录树操作函数
+  const findNode = (key: string, nodes: FileTreeNode[], parent?: FileTreeNode, index?: number): 
+    { node: FileTreeNode, parent?: FileTreeNode, index?: number } | null => {
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i].key === key) {
+        return { node: nodes[i], parent, index: i };
+      }
+      if (nodes[i].children) {
+        const found = findNode(key, nodes[i].children!, nodes[i], i);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const addFolder = (parentKey: string | null, label: string) => {
+    const newFolder: FileTreeNode = {
+      label,
+      value: `folder_${Date.now()}`,
+      key: `folder_${Date.now()}`,
+      children: []
+    };
+    
+    if (parentKey === null) {
+      // 添加到根节点
+      setTreeData([...treeData, newFolder]);
+    } else {
+      const found = findNode(parentKey, treeData);
+      if (found && found.node.children) {
+        const updatedChildren = [...found.node.children, newFolder];
+        const updatedNode = { ...found.node, children: updatedChildren };
+        // 更新树数据
+        const updateTree = (nodes: FileTreeNode[]): FileTreeNode[] => 
+          nodes.map(node => node.key === found.node.key ? updatedNode : 
+            node.children ? { ...node, children: updateTree(node.children) } : node);
+        setTreeData(updateTree(treeData));
+      }
+    }
+  };
+
+  const addFile = (parentKey: string | null, label: string) => {
+    const newFile: FileTreeNode = {
+      label,
+      value: `file_${Date.now()}.md`,
+      key: `file_${Date.now()}`
+    };
+    
+    if (parentKey === null) {
+      // 添加到根节点（文件通常不在根节点，但允许）
+      setTreeData([...treeData, newFile]);
+    } else {
+      const found = findNode(parentKey, treeData);
+      if (found && found.node.children) {
+        const updatedChildren = [...found.node.children, newFile];
+        const updatedNode = { ...found.node, children: updatedChildren };
+        // 更新树数据
+        const updateTree = (nodes: FileTreeNode[]): FileTreeNode[] => 
+          nodes.map(node => node.key === found.node.key ? updatedNode : 
+            node.children ? { ...node, children: updateTree(node.children) } : node);
+        setTreeData(updateTree(treeData));
+      }
+    }
+  };
+
+  const deleteNode = (key: string) => {
+    const found = findNode(key, treeData);
+    if (!found) return;
+    
+    if (!found.parent) {
+      // 根节点
+      setTreeData(treeData.filter((_, i) => i !== found.index));
+    } else {
+      const updatedChildren = found.parent.children!.filter((_, i) => i !== found.index);
+      const updatedNode = { ...found.parent, children: updatedChildren };
+      const updateTree = (nodes: FileTreeNode[]): FileTreeNode[] => 
+        nodes.map(node => node.key === found.parent!.key ? updatedNode : 
+          node.children ? { ...node, children: updateTree(node.children) } : node);
+      setTreeData(updateTree(treeData));
+    }
+  };
+
+  const renameNode = (key: string, newLabel: string) => {
+    const found = findNode(key, treeData);
+    if (!found) return;
+    
+    const updatedNode = { ...found.node, label: newLabel };
+    const updateTree = (nodes: FileTreeNode[]): FileTreeNode[] => 
+      nodes.map(node => node.key === found.node.key ? updatedNode : 
+        node.children ? { ...node, children: updateTree(node.children) } : node);
+    setTreeData(updateTree(treeData));
+  };
+
+  // 打开对话框
+  const openDialog = (
+    type: 'addRootFolder' | 'addFolder' | 'addFile' | 'rename',
+    targetKey?: string,
+    currentLabel?: string
+  ) => {
+    setDialogType(type);
+    setTargetNodeKey(targetKey || null);
+    setCurrentLabel(currentLabel || '');
+    setInputValue(currentLabel || '');
+    // 设置对话框标签
+    let label = '';
+    switch (type) {
+      case 'addRootFolder':
+        label = '请输入根文件夹名';
+        break;
+      case 'addFolder':
+        label = '请输入文件夹名';
+        break;
+      case 'addFile':
+        label = '请输入文件名';
+        break;
+      case 'rename':
+        label = '请输入新名称';
+        break;
+    }
+    setDialogLabel(label);
+    setDialogVisible(true);
+  };
+
+  // 处理对话框确认
+  const handleDialogOk = (e?: any) => {
+    if (!inputValue.trim()) {
+      // 输入为空，可以给出提示，这里直接关闭
+      setDialogVisible(false);
+      return;
+    }
+    switch (dialogType) {
+      case 'addRootFolder':
+        addFolder(null, inputValue);
+        break;
+      case 'addFolder':
+        if (targetNodeKey) addFolder(targetNodeKey, inputValue);
+        break;
+      case 'addFile':
+        if (targetNodeKey) addFile(targetNodeKey, inputValue);
+        break;
+      case 'rename':
+        if (targetNodeKey) renameNode(targetNodeKey, inputValue);
+        break;
+    }
+    setDialogVisible(false);
+    setInputValue('');
+  };
+
   // 防抖处理
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -106,13 +269,21 @@ export default function BlogContent({ articles, articleContents, graphData, file
     <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-120px)]">
       {/* 左侧目录树 */}
       <div className="lg:w-[260px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0 overflow-y-auto">
+        <div className="mb-2 flex justify-end">
+          <button 
+            className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
+            onClick={() => openDialog('addRootFolder')}
+          >
+            添加根文件夹
+          </button>
+        </div>
+        {/* @ts-ignore */}
         <Tree 
-          treeData={fileTreeData} 
-          directory 
-          style={{ width: '100%', height: 'calc(100vh-200px)', border: '1px solid var(--semi-color-border)' }} 
-          onSelect={(keys, info) => {
-            if (keys && keys.length > 0) {
-              const selectedKey = keys[0];
+          treeData={treeData as any} 
+          directory={true} 
+          style={{ width: '100%', height: 'calc(100vh-200px)', border: '1px solid var(--semi-color-border)' } as any} 
+          onSelect={(selectedKey: string, selected: boolean, selectedNodeData: any) => {
+            if (selectedKey) {
               const findNodeByKey = (nodes: FileTreeNode[]): FileTreeNode | null => {
                 for (const node of nodes) {
                   if (node.key === selectedKey) {
@@ -125,7 +296,7 @@ export default function BlogContent({ articles, articleContents, graphData, file
                 }
                 return null;
               };
-              const selectedNode = findNodeByKey(fileTreeData);
+              const selectedNode = findNodeByKey(treeData);
               if (selectedNode && !selectedNode.children) {
                 const selectedFilePath = selectedNode.value;
                 // 标准化路径格式，确保与 articles 中的路径格式一致
@@ -140,7 +311,66 @@ export default function BlogContent({ articles, articleContents, graphData, file
               }
             }
           }}
+          renderExtra={(node: any) => (
+            <div className="flex gap-1">
+              {node.children && (
+                <>
+                  <button 
+                    className="text-xs px-1 py-0.5 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
+                    onClick={(e) => { e.stopPropagation(); openDialog('addFolder', node.key); }}
+                  >
+                    添加文件夹
+                  </button>
+                  <button 
+                    className="text-xs px-1 py-0.5 bg-green-100 text-green-600 rounded hover:bg-green-200"
+                    onClick={(e) => { e.stopPropagation(); openDialog('addFile', node.key); }}
+                  >
+                    添加文件
+                  </button>
+                </>
+              )}
+              <button 
+                className="text-xs px-1 py-0.5 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  Modal.confirm({
+                    title: '确认删除',
+                    content: '确定要删除吗？',
+                    onOk: () => deleteNode(node.key),
+                    okText: '确定',
+                    cancelText: '取消',
+                  });
+                }}
+              >
+                删除
+              </button>
+              <button 
+                className="text-xs px-1 py-0.5 bg-yellow-100 text-yellow-600 rounded hover:bg-yellow-200"
+                onClick={(e) => { e.stopPropagation(); openDialog('rename', node.key, node.label); }}
+              >
+                重命名
+              </button>
+            </div>
+          )}
         />
+        <Modal
+          title={dialogLabel}
+          visible={dialogVisible}
+          onOk={handleDialogOk}
+          onCancel={() => setDialogVisible(false)}
+          closeOnEsc={true}
+        >
+          {/* @ts-ignore */}
+          <Input
+            {...{
+              autoFocus: true,
+              value: inputValue,
+              onChange: (value: string) => setInputValue(value),
+              placeholder: dialogLabel,
+              onPressEnter: handleDialogOk,
+            } as any}
+          />
+        </Modal>
       </div>
 
       <div className="lg:w-[800px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0 overflow-y-auto">
