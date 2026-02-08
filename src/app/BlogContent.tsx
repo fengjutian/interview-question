@@ -412,10 +412,6 @@ export default function BlogContent({ articles, articleContents, graphData, file
     setDebouncedSearchTerm('');
   };
 
-   const onClick = () => {
-      setSideSheetVisible(true);
-  };
-
   return (
     <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-120px)]">
       {/* 左侧目录树 */}
@@ -472,7 +468,6 @@ export default function BlogContent({ articles, articleContents, graphData, file
             } as any}
           />
         </Modal>
-      </div>
 
       <div className="lg:w-[800px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0 overflow-y-auto">
         
