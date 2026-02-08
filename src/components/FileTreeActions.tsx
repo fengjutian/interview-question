@@ -27,7 +27,7 @@ export const FileTreeActions: React.FC<FileTreeActionsProps> = ({
     <div className="flex gap-1 items-center">
       {node.children && (
         <>
-          <button 
+          {/* <button 
             className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors flex items-center gap-1"
             onClick={(e) => { 
               e.stopPropagation(); 
@@ -48,10 +48,10 @@ export const FileTreeActions: React.FC<FileTreeActionsProps> = ({
           >
             <IconFile size="small" />
             <span>添加</span>
-          </button>
+          </button> */}
         </>
       )}
-      <button 
+      {/* <button 
         className="text-xs px-2 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors flex items-center gap-1"
         onClick={(e) => {
           e.stopPropagation();
@@ -78,7 +78,7 @@ export const FileTreeActions: React.FC<FileTreeActionsProps> = ({
       >
         <IconEdit size="small" />
         <span>重命名</span>
-      </button>
+      </button> */}
     </div>
   );
 };
