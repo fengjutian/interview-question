@@ -219,7 +219,7 @@ export default function Home() {
       <main className="max-w-[1500px] mx-auto p-4">
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-4">
-            <Image src="/next.svg" alt="Logo" width={100} height={20} />
+            {/* <Image src="/next.svg" alt="Logo" width={100} height={20} /> */}
             <h1 className="text-3xl font-semibold">知识点分析系统</h1>
           </div>
           <div className="flex items-center gap-6">

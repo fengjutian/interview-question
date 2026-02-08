@@ -106,12 +106,11 @@ export default function BlogContent({ articles, articleContents, graphData, file
     <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-120px)]">
       {/* 左侧目录树 */}
       <div className="lg:w-[260px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0 overflow-y-auto">
-        <h3 className="text-lg font-semibold mb-4">文件目录</h3>
         <Tree 
           treeData={fileTreeData} 
           directory 
           style={{ width: '100%', height: 'calc(100vh-200px)', border: '1px solid var(--semi-color-border)' }} 
-          onSelect={(keys) => {
+          onSelect={(keys, info) => {
             if (keys && keys.length > 0) {
               const selectedKey = keys[0];
               const findNodeByKey = (nodes: FileTreeNode[]): FileTreeNode | null => {
@@ -129,7 +128,12 @@ export default function BlogContent({ articles, articleContents, graphData, file
               const selectedNode = findNodeByKey(fileTreeData);
               if (selectedNode && !selectedNode.children) {
                 const selectedFilePath = selectedNode.value;
-                const correspondingArticle = articles.find(article => article.file === selectedFilePath);
+                // 标准化路径格式，确保与 articles 中的路径格式一致
+                const normalizedPath = selectedFilePath.replace(/\\/g, '/');
+                const correspondingArticle = articles.find(article => {
+                  const articleFileNormalized = article.file.replace(/\\/g, '/');
+                  return articleFileNormalized === normalizedPath;
+                });
                 if (correspondingArticle) {
                   setSelectedArticle(correspondingArticle);
                 }
