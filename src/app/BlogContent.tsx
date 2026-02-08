@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FloatButton, SideSheet, Tree, Modal, Input } from '@douyinfe/semi-ui';
+import { FloatButton, Tree, Modal, Input } from '@douyinfe/semi-ui';
 import { IconAIEditLevel1, IconSourceControl, IconFolder, IconFile, IconDelete, IconEdit } from '@douyinfe/semi-icons';
 import { MarkdownRenderer } from "../components/MarkdownRenderer.js";
-import KnowledgeGraphClient from "./knowledge-graph/KnowledgeGraphClient.js";
+import { AIEditSideSheet } from "../components/AIEditSideSheet.js";
+import { KnowledgeGraphSideSheet } from "../components/KnowledgeGraphSideSheet.js";
 
 // 条件导入 Node.js 核心模块
 let fs: any = null;
@@ -604,51 +605,34 @@ export default function BlogContent({ articles, articleContents, graphData, file
         </div>
       </div>
 
-      <FloatButton icon={< IconSourceControl />} style={{ bottom: '60px' }} onClick={() => setKnowledgeGraphVisible(true)}/>
-      <FloatButton icon={<IconAIEditLevel1 />} style={{ bottom: '20px' }} onClick={() => setSideSheetVisible(true)}/>
-      
-      
-      {/* 原有的侧边栏 */}
-      <SideSheet
-        title="AI 辅助编辑"
-        visible={sideSheetVisible}
-        onCancel={() => setSideSheetVisible(false)}
-        width={'30%'}
-        placement="right"
-        mask={false}
-      >
-        <div className="p-2">
-          <h3 className="text-lg font-semibold mb-4">AI 辅助编辑</h3>
-          <p className="mb-4">使用 AI 工具来帮助你编辑和优化 Markdown 内容。</p>
-          <div className="border rounded-lg p-4">
-            <h4 className="text-md font-medium mb-2">功能特点：</h4>
-            <ul className="list-disc pl-5 space-y-2">
-              <li>自动语法检查</li>
-              <li>内容优化建议</li>
-              <li>代码格式美化</li>
-              <li>标题层级调整</li>
-            </ul>
-          </div>
-        </div>
-      </SideSheet>
-      
+      {/* 浮动按钮 */}
+      <div className="fixed bottom-0 right-0 flex flex-col items-end gap-4 p-4">
+        <FloatButton 
+          icon={<IconSourceControl />} 
+          style={{ bottom: '60px' }} 
+          onClick={() => setKnowledgeGraphVisible(true)}
+        />
+        <FloatButton 
+          icon={<IconAIEditLevel1 />} 
+          style={{ bottom: '20px' }} 
+          onClick={() => setSideSheetVisible(true)}
+        />
+      </div>
+
+      {/* AI 辅助编辑侧边栏 */}
+      <AIEditSideSheet 
+        visible={sideSheetVisible} 
+        onClose={() => setSideSheetVisible(false)} 
+      />
+
       {/* 知识图谱侧边栏 */}
-      <SideSheet
-        title="知识图谱"
-        visible={knowledgeGraphVisible}
-        onCancel={() => setKnowledgeGraphVisible(false)}
-        width={'800px'}
-        placement="right"
-        mask={true}
-      >
-        <div className="h-[600px]">
-          <KnowledgeGraphClient 
-            allFilesGraphData={graphData}
-            fileGraphDataMap={fileGraphDataMap}
-            fileList={fileList}
-          />
-        </div>
-      </SideSheet>
+      <KnowledgeGraphSideSheet 
+        visible={knowledgeGraphVisible} 
+        onClose={() => setKnowledgeGraphVisible(false)}
+        graphData={graphData}
+        fileGraphDataMap={fileGraphDataMap}
+        fileList={fileList}
+      />
     </div>
   );
 }
