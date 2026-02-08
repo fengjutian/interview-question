@@ -1,0 +1,2006 @@
+1:"$Sreact.fragment"
+2:I[83796,["/_next/static/chunks/9e42656a22c84414.js","/_next/static/chunks/f2a54fc88ca568fc.js","/_next/static/chunks/b2cc37dab822451a.js"],"default"]
+3:I[56599,["/_next/static/chunks/9e42656a22c84414.js","/_next/static/chunks/f2a54fc88ca568fc.js","/_next/static/chunks/b2cc37dab822451a.js"],"default"]
+1a:I[88061,["/_next/static/chunks/69ce4022b2896912.js"],"OutletBoundary"]
+1b:"$Sreact.suspense"
+:HL["/_next/static/chunks/82b56eae54f8bdfa.css","style"]
+:HL["/_next/static/chunks/f1a213090f388872.css","style"]
+:HL["/_next/static/chunks/ebefbfff0308d4b3.css","style"]
+:HL["/_next/static/chunks/be7af2e9a9e4a21e.css","style"]
+4:Td49,
+## ① 基础送分题
+
+```js
+console.log(1);
+
+setTimeout(() => console.log(2), 0);
+
+Promise.resolve().then(() => console.log(3));
+
+console.log(4);
+```
+
+**输出**
+
+```text
+1
+4
+3
+2
+```
+
+**必错点**
+
+* 以为 `setTimeout(0)` 立刻执行
+
+**结论**
+
+> 微任务一定在下一个宏任务之前执行
+
+---
+
+## ② 微任务套娃题（90% 人懵）
+
+```js
+Promise.resolve().then(() => {
+  console.log(1);
+  Promise.resolve().then(() => console.log(2));
+});
+```
+
+**输出**
+
+```text
+1
+2
+```
+
+**必错点**
+
+* 以为第二个 `then` 会等下一轮
+
+**结论**
+
+> 微任务中产生的微任务，会追加到**当前微任务队列**
+
+---
+
+## ③ 微任务 vs 宏任务嵌套（高频）
+
+```js
+setTimeout(() => {
+  console.log(1);
+  Promise.resolve().then(() => console.log(2));
+}, 0);
+
+Promise.resolve().then(() => console.log(3));
+```
+
+**输出**
+
+```text
+3
+1
+2
+```
+
+**必错点**
+
+* 把 `2` 当成比 `3` 先执行
+
+**结论**
+
+> **微任务只在“当前宏任务结束后”执行**
+
+---
+
+## ④ 两个 setTimeout，谁先？
+
+```js
+setTimeout(() => console.log(1), 0);
+
+setTimeout(() => console.log(2), 0);
+```
+
+**输出**
+
+```text
+1
+2
+```
+
+**必错点**
+
+* 怀疑浏览器会“乱序”
+
+**结论**
+
+> 同一个宏任务队列，**FIFO（先进先出）**
+
+---
+
+## ⑤ 微任务阻塞渲染（理解题）
+
+```js
+setTimeout(() => console.log('timeout'), 0);
+
+Promise.resolve().then(() => {
+  while (true) {}
+});
+```
+
+**输出**
+
+```text
+（无输出，页面卡死）
+```
+
+**必错点**
+
+* 以为 setTimeout 还能执行
+
+**结论**
+
+> 微任务不清空，**宏任务永远进不来**
+
+---
+
+## ⑥ Promise.then vs queueMicrotask
+
+```js
+queueMicrotask(() => console.log(1));
+
+Promise.resolve().then(() => console.log(2));
+```
+
+**输出**
+
+```text
+1
+2
+```
+
+**必错点**
+
+* 以为两者“完全等价、顺序不定”
+
+**结论**
+
+> 它们都进微任务队列，但**注册顺序决定执行顺序**
+
+---
+
+## ⑦ 宏任务里再来宏任务
+
+```js
+setTimeout(() => {
+  console.log(1);
+  setTimeout(() => console.log(2), 0);
+}, 0);
+```
+
+**输出**
+
+```text
+1
+2
+```
+
+**必错点**
+
+* 以为两个 setTimeout 会同一轮执行
+
+**结论**
+
+> 宏任务里创建的宏任务 → **下一轮事件循环**
+
+---
+
+## ⑧ script 本身是宏任务（重点）
+
+```js
+Promise.resolve().then(() => console.log(1));
+
+console.log(2);
+```
+
+**输出**
+
+```text
+2
+1
+```
+
+**必错点**
+
+* 以为 Promise 一定“最快”
+
+**结论**
+
+> 微任务要等**当前宏任务（script）结束**
+
+---
+
+## ⑨ 微任务 + 宏任务混合地狱题
+
+```js
+setTimeout(() => {
+  console.log(1);
+}, 0);
+
+Promise.resolve()
+  .then(() => {
+    console.log(2);
+    setTimeout(() => console.log(3), 0);
+  })
+  .then(() => console.log(4));
+```
+
+**输出**
+
+```text
+2
+4
+1
+3
+```
+
+**必错点**
+
+* 把 `3` 提前
+* 忘记 `then` 链仍是微任务
+
+**结论**
+
+> then 链 = 微任务队列
+> setTimeout = 新一轮宏任务
+
+---
+
+## ⑩ 终极陷阱题（面试王）
+
+```js
+console.log(1);
+
+async function foo() {
+  console.log(2);
+  await null;
+  console.log(3);
+}
+
+foo();
+
+console.log(4);
+```
+
+**输出**
+
+```text
+1
+2
+4
+3
+```
+
+**必错点**
+
+* 以为 `await null` 是同步
+
+**结论**
+
+> `await` 后面的代码，本质是 **Promise.then（微任务）**
+
+---
+
+## 🧠 一句话总规律（背这个就够）
+
+> **同步代码先执行
+> → 清空微任务
+> → 浏览器渲染
+> → 执行下一个宏任务**
+
+---5:Tda8,
+## 一、先一句话给你一个“脑内模型”
+
+> **JS 执行顺序 = 同步 → 微任务 → 渲染 → 宏任务**
+
+记住这句话，后面所有题都能推出来。
+
+---
+
+## 二、为什么要区分「宏任务 / 微任务」？
+
+JS 是**单线程**的，但浏览器/Node 要同时处理：
+
+* 用户点击
+* 网络请求
+* 定时器
+* Promise
+
+👉 所以设计了一个 **事件循环（Event Loop）**：
+
+* **宏任务**：大任务，阶段性执行
+* **微任务**：当前任务执行完立刻清空
+
+**微任务的设计目的只有一个**：
+
+> **让“状态变更”能尽快生效**
+
+---
+
+## 三、宏任务（Macro Task）
+
+### 常见宏任务
+
+* `script`（整体代码）
+* `setTimeout`
+* `setInterval`
+* `setImmediate`（Node）
+* `MessageChannel`
+* I/O
+* UI 事件（click、scroll）
+
+**特点**
+
+* 一次事件循环只执行 **一个宏任务**
+* 执行完后 → 执行所有微任务
+
+---
+
+## 四、微任务（Micro Task）
+
+### 常见微任务
+
+* `Promise.then / catch / finally`
+* `queueMicrotask`
+* `MutationObserver`
+* `process.nextTick`（Node，特殊）
+
+**特点**
+
+* 当前执行栈清空后 **立刻执行**
+* 会一直执行，直到微任务队列为空
+* **会阻塞页面渲染**
+
+---
+
+## 五、事件循环完整流程（浏览器）
+
+```text
+1. 执行一个宏任务（script / setTimeout）
+2. 清空微任务队列
+3. 进行页面渲染（可能）
+4. 进入下一个宏任务
+```
+
+⚠️ **关键点**
+
+* 每个宏任务后，都会把微任务“清空”
+* 渲染发生在宏任务之间，而不是微任务之间
+
+---
+
+## 六、经典执行顺序例子（必会）
+
+```js
+console.log(1);
+
+setTimeout(() => {
+  console.log(2);
+}, 0);
+
+Promise.resolve().then(() => {
+  console.log(3);
+});
+
+console.log(4);
+```
+
+### 执行过程
+
+1. 同步代码
+   👉 `1`、`4`
+2. 微任务
+   👉 `3`
+3. 宏任务
+   👉 `2`
+
+### 输出顺序
+
+```text
+1
+4
+3
+2
+```
+
+---
+
+## 七、微任务“套娃”示例（面试官最爱）
+
+```js
+Promise.resolve().then(() => {
+  console.log(1);
+  Promise.resolve().then(() => {
+    console.log(2);
+  });
+});
+```
+
+**输出**
+
+```text
+1
+2
+```
+
+👉 原因：**微任务里产生的微任务，会追加到当前微任务队列末尾**
+
+---
+
+## 八、和渲染相关的坑（高频）
+
+```js
+setTimeout(() => {
+  console.log('timeout');
+}, 0);
+
+Promise.resolve().then(() => {
+  console.log('promise');
+  while (true) {} // 死循环
+});
+```
+
+结果：
+
+* 页面 **永远不会渲染**
+* `setTimeout` **永远不执行**
+
+👉 **微任务如果不结束，宏任务永远进不来**
+
+---
+
+## 九、Node.js 中的差异（加分点）
+
+### Node 里的队列优先级（简化版）
+
+```text
+process.nextTick
+↓
+Promise 微任务
+↓
+timers (setTimeout)
+↓
+poll (I/O)
+↓
+check (setImmediate)
+```
+
+⚠️ `process.nextTick`
+
+* 比 Promise 还快
+* **可能饿死 I/O（不推荐滥用）**
+
+---
+
+## 十、一句话对比总结（面试直接用）
+
+| 对比项    | 宏任务        | 微任务          |
+| ------ | ---------- | ------------ |
+| 执行时机   | 事件循环阶段     | 当前宏任务结束后     |
+| 队列数量   | 每轮一个       | 全部清空         |
+| 是否阻塞渲染 | 否          | 是            |
+| 常见 API | setTimeout | Promise.then |
+
+---
+
+## 十一、知识图谱视角
+
+```text
+事件循环
+├─ 宏任务队列
+│  ├─ setTimeout
+│  └─ UI 事件
+│
+├─ 微任务队列
+│  ├─ Promise
+│  ├─ queueMicrotask
+│
+└─ 浏览器渲染
+```
+
+
+6:Te56,
+## 常用Hooks及其使用场景
+
+### useState：管理组件状态
+```jsx
+const [count, setCount] = useState(0);
+```
+### useEffect：处理副作用，如数据获取、订阅事件等
+
+```jsx
+useEffect(() => {
+  document.title = `点击了${count}次`;
+  return () => { /* 清理函数 */ };
+}, [count]);
+```
+
+### useContext：跨组件共享状态
+```jsx
+const theme = useContext(ThemeContext);
+```
+
+### useReducer：复杂状态逻辑管理
+```jsx
+const [state, dispatch] = useReducer(reducer, initialState);
+```
+
+### useCallback：缓存函数引用，避免不必要的重新渲染
+```jsx
+const handleClick = useCallback(() => {
+  setCount(count + 1);
+}, [count]);
+```
+
+### useMemo：缓存计算结果
+```jsx
+const expensiveValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
+```
+
+### useImperativeHandle：自定义暴露给父组件的实例值
+```jsx
+useImperativeHandle(ref, () => ({
+  focus: () => inputRef.current.focus()
+}));
+```
+
+### useDebugValue：在React DevTools中显示自定义Hook的调试信息
+```jsx
+useDebugValue(count > 0 ? '已点击' : '未点击');
+```
+
+### useLayoutEffect：在DOM更新后同步执行副作用
+```jsx
+useLayoutEffect(() => {
+  // 同步执行布局相关操作
+}, [dependencies]);
+```
+
+### useRef：保存可变值，访问DOM元素
+```jsx
+const inputRef = useRef(null);
+```
+
+## 如何使用自定义Hook复用逻辑？
+自定义Hook是一种复用状态逻辑的方式，它可以提取组件逻辑到可重用的函数中。
+
+例如，创建一个管理表单的Hook：
+
+```jsx
+function useForm(initialValues) {
+  const [values, setValues] = useState(initialValues);
+  
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setValues(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  }, []);
+  
+  const resetForm = useCallback(() => {
+    setValues(initialValues);
+  }, [initialValues]);
+  
+  return { values, handleChange, resetForm };
+}
+
+// 使用自定义Hook
+function LoginForm() {
+  const { values, handleChange, resetForm } = useForm({ username: '', password: '' });
+  
+  return (
+    <form>
+      <input name="username" value={values.username} onChange={handleChange} />
+      <input name="password" value={values.password} onChange={handleChange} />
+      <button type="button" onClick={resetForm}>重置</button>
+    </form>
+  );
+}
+```
+
+## React.memo与useMemo的区别？
+### React.memo：
+
+- 是一个高阶组件
+- 用于包裹函数组件，对props进行浅比较
+- 当props不变时，避免组件重新渲染
+
+```jsx
+const MyComponent = React.memo(function MyComponent(props) {
+  // 仅当props变化时重新渲染
+});
+```
+### useMemo
+
+- 是一个Hook
+- 用于缓存计算结果
+- 只有依赖项变化时才重新计算值
+
+```jsx
+const memoizedValue = useMemo(() => {
+  return computeExpensiveValue(a, b);
+}, [a, b]);
+```
+
+区别：React.memo用于整个组件的记忆化，而useMemo用于特定计算结果的记忆化。
+
+## useEffect VS useLayoutEffect
+useEffect 在 React 的渲染过程中是被异步调用的，用于绝大多数场景；useLayoutEffect 会在所有的 DOM 变更之后同步调用，主要用于处理 DOM 操作、调整样式、避免页面闪烁等问题。也正因为是同步处理，所以需要避免在 useLayoutEffect 做计算量较大的耗时任务从而造成阻塞。
+
+useEffect 是按照顺序执行代码的，改变屏幕像素之后执行（先渲染，后改变DOM），当改变屏幕内容时可能会产生闪烁；useLayoutEffect 是改变屏幕像素之前就执行了（会推迟页面显示的事件，先改变DOM后渲染），不会产生闪烁。useLayoutEffect总是比useEffect先执行。
+7:T8d9,# 为什么 ref 要用 .value？
+
+Vue 3 中的 `ref` 是一个响应式引用，它需要使用 `.value` 来访问和修改其值，主要原因如下：
+
+## 1. 实现响应式
+
+`ref` 内部使用了 `Proxy` 来实现响应式，通过 `.value` 访问可以触发 getter 和 setter，从而实现依赖收集和响应式更新。当你访问 `ref.value` 时，Vue 会追踪这个依赖；当你修改 `ref.value` 时，Vue 会通知所有依赖于这个值的组件进行更新。
+
+## 2. 统一处理基本类型和对象类型
+
+- **基本类型**（如数字、字符串、布尔值）：在 JavaScript 中是按值传递的，不是引用类型，无法直接被代理
+- **对象类型**：是按引用传递的，可以直接被 `Proxy` 代理
+
+`ref` 通过 `.value` 将基本类型包装成对象，从而统一了响应式处理方式，无论存储的是什么类型的数据。
+
+## 3. 避免 JavaScript 语言限制
+
+JavaScript 中基本类型（number、string、boolean、null、undefined、symbol、bigint）不是对象，无法像对象那样添加属性或方法。通过 `.value` 包装，可以将基本类型转换为对象，从而实现响应式。
+
+## 4. 区分响应式和非响应式数据
+
+通过 `.value` 可以明确区分响应式数据和普通数据，提高代码可读性。当你看到 `.value` 时，就知道这是一个响应式引用。
+
+## 5. 与 reactive 配合使用的语法糖
+
+当 `ref` 作为 `reactive` 对象的属性时，Vue 3 会自动解包，不需要使用 `.value`：
+
+```javascript
+const count = ref(0);
+const obj = reactive({
+  count // 自动解包
+});
+
+console.log(obj.count); // 不需要 .value
+```
+
+## 6. TypeScript 支持
+
+使用 `.value` 可以让 TypeScript 更好地推断类型，提供更准确的类型检查。
+
+## 7. 函数式组件兼容
+
+在函数式组件中，使用 `.value` 可以确保响应式数据的正确处理，避免闭包陷阱。
+
+## 总结
+
+`.value` 是 Vue 3 为了实现更强大、更灵活的响应式系统而设计的语法，虽然一开始可能会觉得有些繁琐，但它带来了很多好处，包括统一的响应式处理、更好的类型支持和更清晰的代码结构。随着使用习惯的养成，你会发现这种方式其实是非常直观和高效的。8:T7d6,          
+# 为什么 Proxy 比 defineProperty 好？
+
+Vue 3 使用 Proxy 替代 Object.defineProperty 作为响应式系统的核心，主要有以下几个优势：
+
+## 1. 可以拦截更多操作
+
+- **Object.defineProperty**：只能拦截属性的读取（get）和设置（set）操作
+- **Proxy**：可以拦截更多操作，包括：
+  - 属性读取（get）
+  - 属性设置（set）
+  - 属性删除（deleteProperty）
+  - 遍历对象（ownKeys）
+  - 获取原型（getPrototypeOf）
+  - 检查属性是否存在（has）等
+
+## 2. 可以原生处理数组
+
+- **Object.defineProperty**：对数组的处理需要特殊处理，需要重写数组的方法（如 push、pop、splice 等）
+- **Proxy**：可以直接拦截数组的操作，无需特殊处理
+
+## 3. 可以处理新增属性
+
+- **Object.defineProperty**：只能拦截已存在的属性，对于新增的属性需要手动调用 `Vue.set` 或 `this.$set` 来使其响应式
+- **Proxy**：可以自动拦截新增属性的操作，无需手动处理
+
+## 4. 可以处理嵌套对象
+
+- **Object.defineProperty**：需要递归遍历对象的所有属性，包括嵌套对象，在初始化时就需要完成所有属性的拦截
+- **Proxy**：可以在访问嵌套对象时动态拦截，实现懒代理，提高性能
+
+## 5. 性能更好
+
+- **Object.defineProperty**：在处理大型对象时，需要递归遍历所有属性，初始化成本较高
+- **Proxy**：采用懒代理的方式，只在需要时才拦截属性操作，初始化成本更低
+
+## 6. API 更简洁
+
+- **Object.defineProperty**：需要为每个属性单独定义 getter 和 setter
+- **Proxy**：只需要定义一个 Proxy 对象，就可以拦截整个对象的所有操作
+
+## 7. 是 ES6 标准特性
+
+- **Object.defineProperty**：是 ES5 的特性
+- **Proxy**：是 ES6 的标准特性，提供了更现代、更强大的 API
+
+这些优势使得 Vue 3 的响应式系统更加灵活、强大和高效，能够更好地满足复杂应用的需求。9:T1493,
+## 什么是 WebSocket？解决了什么问题？
+WebSocket 是一种基于 TCP 的全双工通信协议，通过一次 HTTP Upgrade 握手后建立长连接，允许客户端和服务端随时双向通信，解决了 HTTP 无法服务端主动推送、实时性差的问题。
+
+## WebSocket 建立连接的过程？
+1. 客户端发起 HTTP 请求（带 Upgrade: websocket）
+2. 服务端返回 101 Switching Protocols
+3. 协议从 HTTP 切换为 WebSocket
+4. 在同一条 TCP 连接上进行双向通信
+
+## WebSocket 和 HTTP 有什么区别？
+| 维度   | HTTP | WebSocket |
+| ---- | ---- | --------- |
+| 连接   | 短连接  | 长连接       |
+| 通信   | 单向   | 全双工       |
+| 协议   | 应用层  | 应用层       |
+| 实时性  | 差    | 高         |
+| 头部开销 | 大    | 小         |
+
+
+## WebSocket 是如何保证安全的？
+WebSocket 本身不负责加密，安全性主要体现在两个方面：
+一是握手阶段通过 Sec-WebSocket-Key / Sec-WebSocket-Accept 校验，防止普通 HTTP 请求伪装成 WebSocket；
+二是实际生产环境中通常使用 wss://，也就是基于 TLS 的 WebSocket，由 HTTPS 提供数据加密和身份校验。
+
+## WebSocket 如何防中间人攻击？
+通过 TLS 加密，确保握手和数据传输过程中的安全性。
+
+## WebSocket 为什么是全双工？
+WebSocket 建立在 TCP 之上，而 TCP 天然是全双工的；
+同时 WebSocket 协议中不再区分请求和响应，客户端和服务端都可以在任意时间主动发送数据，因此实现了真正的全双工通信。
+
+## HTTP2 也是基于 TCP，它为什么不是全双工？
+HTTP2 虽然支持多路复用，但语义上仍然是请求-响应模型，而 WebSocket 没有这个语义限制。
+
+## WebSocket 消息是如何传输的？
+WebSocket 以 Frame（帧） 为单位进行数据传输，一条完整消息可以由一个或多个帧组成。
+每个帧包含 FIN、Opcode、Payload Length 和 Payload Data，用于标识消息类型、是否结束以及具体数据内容。
+
+## 为什么要拆成 Frame？直接一条消息不行吗？
+拆成 Frame 有以下几个原因：
+1. 支持二进制数据传输：Frame 可以包含任意二进制数据，而消息只能包含文本或 JSON 等可序列化数据。
+2. 支持消息分片：一条大消息可以拆分成多个 Frame 发送，避免单次传输数据量过大。
+3. 支持消息压缩：可以在 Frame 级别进行压缩，减少传输数据量。
+
+## WebSocket 如何做心跳保活？
+WebSocket 协议本身定义了 ping / pong 控制帧用于心跳检测。
+服务端会定期发送 ping，如果在指定时间内未收到 pong，则认为连接失效并关闭连接。
+
+
+## WebSocket 断线重连怎么做？
+1. 监听 onclose / onerror
+2. 延迟发起重连，避免瞬时重试
+3. 重新进行身份校验
+4. 必要时进行消息补偿
+   
+## 如果一万客户端同时断线重连怎么办？
+1. 服务端可以限制每个客户端的重连次数，避免对服务端压力过大。
+2. 可以采用分布式部署，将客户端连接分布到多个节点，避免单点压力。
+
+## WebSocket 如何鉴权？
+WebSocket 握手阶段浏览器无法自定义 Header，因此常见做法是在连接建立后，通过第一条消息发送 token 进行鉴权，服务端校验通过后才允许后续通信。
+
+### 为什么不直接把 token 放 URL？
+- URL 容易被日志记录
+- 安全性差
+
+## WebSocket 如何处理消息可靠性？
+WebSocket 基于 TCP，只保证字节传输可靠，不保证业务消息一定被正确处理。
+业务层通常需要自行实现消息 ID、ACK 确认、重发机制，确保消息不丢、不重、不乱。
+
+### 那 WebSocket 和 MQ 谁更可靠？
+- WebSocket 依赖 TCP 协议，而 MQ 是应用层协议，因此 WebSocket 更可靠。
+- 但 MQ 通常用于异步解耦场景，而 WebSocket 更适用于实时通信场景。
+
+
+## WebSocket 如何支持集群？
+WebSocket 是有状态连接，在集群环境下需要解决连接和消息路由问题，常见方案包括：
+- 使用 Nginx Sticky Session
+- 通过 Redis Pub/Sub 广播消息
+- 使用消息队列进行跨节点通信
+
+
+## WebSocket 和 SSE 的区别？
+|       | WebSocket | SSE     |
+| ----- | --------- | ------- |
+| 通信    | 双向        | 单向      |
+| 协议    | TCP       | HTTP    |
+| 浏览器支持 | 好         | 好       |
+| 适用    | IM / 游戏   | 通知 / 推送 |
+
+## WebSocket 是不是一直占用线程？
+不是。
+在事件驱动模型下，WebSocket 通常基于 epoll/select，一个线程可以管理成千上万条连接，不会为每个连接分配一个线程。
+
+### 那什么情况下会占满线程？
+- 同步阻塞 IO
+- 消息处理逻辑太慢
+
+## WebSocket 可以跨域吗？
+可以。
+WebSocket 不受浏览器同源策略限制，但服务器可以通过校验 Origin 头来控制来源。
+
+### 那算不算安全漏洞？
+不是。
+Origin 头只是一个建议，服务器可以根据业务逻辑来判断是否接受连接。
+
+
+## WebSocket 和 HTTP2 能一起用吗？
+传统 WebSocket 基于 HTTP/1.1 的 Upgrade 机制，HTTP/2 不支持这种 Upgrade。
+虽然存在 WebSocket over HTTP/2 的扩展方案，但目前主流浏览器和生产环境中并不常用。a:Tac7,## 为什么使用Flutter?(Flutter的特点)
+- 性能：实现了自绘引擎，保持不同端UI一致性，动画流畅性。
+- 生态：从Github上来看，目前Flutter活跃用户正在高速增长。从Stackoverflow上提问来看，Flutter社区现在已经很庞大。
+- 技术支持：现在Google正在大力推广Flutter，Flutter的作者中很多人都是来自Chromium团队，并且github上活跃度很高。
+- 开发效率：Flutter的热重载可帮助开发者快速地进行测试、构建UI、添加功能并更快地修复错误。在iOS和Android模拟器或真机上可以实现毫秒级热重载，并且不会丢失状态。
+
+## Flutter定义了三种不同类型的Channel
+- **BasicMessageChannel**：用于传递字符串和半结构化的信息。
+- **MethodChannel**：用于传递方法调用（method invocation）。
+- **EventChannel**：用于数据流（event streams）的通信。
+
+注意
+Method Channel 是非线程安全的。原生代码在处理方法调用请求时，如果涉及到异步或非主线程切换，需要确保回调过程是在原生系统的 UI 线程（也就是 Android 和 iOS 的主线程）中执行的，否则应用可能会出现奇怪的 Bug，甚至是 Crash。
+
+## Flutter是如何做到一套Dart代码可以编译运行在Android和iOS平台的？所以说具体的原理。
+
+Skia绘制，实现跨平台应用层渲染一致性
+Method Channel 机制
+
+为了解决调用原生系统底层能力以及相关代码库复用问题，Flutter 为开发者提供了一个轻量级的解决方案，即逻辑层的方法通道（Method Channel）机制。基于方法通道，我们可以将原生代码所拥有的能力，以接口形式暴露给 Dart，从而实现 Dart 代码与原生代码的交互，就像调用了一个普通的 Dart API 一样。
+
+![alt text](imgs/flutter/image.png)
+
+## Flutter在不使用WebView和JS方案的情况下。如何做到热更新？说一下大概思路。
+- iOS 目前不支持，不能过审
+- 安卓，可以替换so文件来实现
+可以接入Tinker进行热更新，而且有Bugly做为补丁版本控制台，来上传下发补丁，统计数量。
+
+## 如何让Flutter 编译出来的APP的包大小尽可能的变小？
+1. 移除无用代码和无用资源，压缩图片, 安卓里拆 App Bundle,
+2. Dart 编译产物做针对性优化
+动态下发：剥离 Data 段及一切非必要产物，打包后动态下发。
+内置压缩：以二进制形态内置动态下发包。
+3. Flutter 引擎编译产物优化
+主要优化思路有升级 Bulild Tools 统一双编译参数，
+定制化编译裁剪引擎内部部分特定无用功能。
+4. 机器码指令优化
+精简机器码指令，Google 也回复称未来 Dart 与 OC 基本持平。
+b:T1079,
+## 请简述qiankun的实现原理
+qiankun 是一个基于 single-spa 的微前端实现库，它能够帮助我们将多个独立的前端应用聚合成一个整体的应用。它的实现原理是通过监听路由变化，动态加载和卸载微应用，同时通过自定义事件系统来实现微应用之间的通信。
+
+## 如果让你来设计实现一个微前端框架，你会怎么设计？
+- 主应用和子应用之间的通信：可以通过自定义事件系统来实现，主应用和子应用之间通过自定义事件来进行通信。
+- 子应用的加载和卸载：可以通过监听路由变化，动态加载和卸载微应用。
+- 子应用之间的通信：可以通过自定义事件系统来实现，子应用之间通过自定义事件来进行通信。
+- 样式隔离：可以通过将子应用的样式进行隔离，避免样式冲突。
+- 共享状态：可以通过共享状态来实现，主应用和子应用之间通过共享状态来进行通信。
+- 路由处理：可以通过监听路由变化，动态加载和卸载微应用。
+- 生命周期管理：可以通过监听路由变化，动态加载和卸载微应用。
+- 安全性：可以通过对子应用进行沙箱隔离，避免子应用对主应用的影响。
+- 性能优化：可以通过对子应用进行懒加载，避免一次性加载所有子应用。
+- 部署：可以通过将子应用进行打包，然后通过 CDN 进行部署。
+
+## qiankun主应用如何开启样式隔离？
+qiankun 主应用可以通过设置 sandbox 属性来开启样式隔离，sandbox 属性可以设置为 true 或者一个对象，当设置为 true 时，会开启默认的样式隔离，当设置为一个对象时，可以自定义样式隔离的配置。 示例：
+```js
+loadMicroApp({
+name: 'sub-app',
+entry: '[//localhost:8080](notion://localhost/)',
+container: '#sub-app-container',
+sandbox: { strictStyleIsolation: true },
+});
+```
+
+## qiankun微前端框架中，子应用之间是如何通信的？
+qiankun 微前端框架中，子应用之间是通过自定义事件系统来进行通信的，子应用之间可以通过自定义事件来进行通信，主应用也可以通过自定义事件来和子应用进行通信。
+
+## qiankun主子应用、子子应用之间的通信方式有哪些？
+- 自定义事件：主子应用、子子应用之间可以通过自定义事件来进行通信。
+- 全局变量：主子应用、子子应用之间可以通过全局变量来进行通信。
+- window 对象：主子应用、子子应用之间可以通过 window 对象来进行通信。
+- HTML5 通信 API：主子应用、子子应用之间可以通过 HTML5 通信 API 来进行通信，如 postMessage、BroadcastChannel 等。
+- 共享状态：主子应用、子子应用之间可以通过共享状态来进行通信。
+- 跨域通信：主子应用、子子应用之间可以通过跨域通信来进行通信，如 JSONP、CORS 等。
+- 代理：主子应用、子子应用之间可以通过代理来进行通信，如 Nginx 代理、反向代理等。
+- 中间件：主子应用、子子应用之间可以通过中间件来进行通信，如 koa 中间件、express 中间件等。
+- 事件总线：主子应用、子子应用之间可以通过事件总线来进行通信，如 EventBus、EventEmitter 等。
+- WebSocket：主子应用、子子应用之间可以通过 WebSocket 来进行通信。
+- 服务端：主子应用、子子应用之间可以通过服务端来进行通信，如 RESTful API、GraphQL 等。
+
+## qiankun微前端框架中，子应用是如何加载的？
+qiankun 微前端框架中，子应用是通过 loadMicroApp 方法来加载的，loadMicroApp 方法接收一个配置对象，配置对象包括子应用的名称、入口文件、容器、激活规则等信息，loadMicroApp 方法会根据配置对象动态加载子应用，并将子应用挂载到容器中。
+
+## qiankun微前端框架中，子应用是如何卸载的？
+qiankun 微前端框架中，子应用是通过 unmountMicroApp 方法来卸载的，unmountMicroApp 方法接收一个子应用的名称，unmountMicroApp 方法会根据子应用的名称动态卸载子应用，并将子应用从容器中移除。
+
+
+
+c:T123c,
+## JDK 和 JRE 有什么区别？
+
+- JDK：Java Development Kit 的简称，java 开发工具包，提供了 java 的开发环境和运行环境。
+- JRE：Java Runtime Environment 的简称，java 运行环境，为 java 的运行提供了所需环境。
+
+ 具体来说 JDK 其实包含了 JRE，同时还包含了编译 java 源码的编译器 javac，还包含了很多 java 程序调试和分析的工具。简单来说：如果你需要运行 java 程序，只需安装 JRE 就可以了，如果你需要编写 java 程序，需要安装 JDK。
+
+ ## == 和 equals 的区别是什么？
+
+ == 对于基本类型来说是值比较，对于引用类型来说是比较的是引用；而 equals 默认情况下是引用比较，只是很多类重新了 equals 方法，比如 String、Integer 等把它变成了值比较，所以一般情况下 equals 比较的是值是否相等。
+
+ ## 两个对象的 hashCode()相同，则 equals()也一定为 true，对吗？
+
+ ## final 在 java 中有什么作用？
+
+- final 修饰的类叫最终类，该类不能被继承。
+- final 修饰的方法不能被重写。
+- final 修饰的变量叫常量，常量必须初始化，初始化之后值就不能被修改。
+
+## java 中的 Math.round(-1.5) 等于多少？
+等于 -1，因为在数轴上取值时，中间值（0.5）向右取整，所以正 0.5 是往上取整，负 0.5 是直接舍弃。
+
+## String 属于基础的数据类型吗？
+String 不属于基础类型，基础类型有 8 种：byte、boolean、char、short、int、float、long、double，而 String 属于对象。
+
+## java 中操作字符串都有哪些类？它们之间有什么区别？
+操作字符串的类有：String、StringBuffer、StringBuilder。
+String 和 StringBuffer、StringBuilder 的区别在于 String 声明的是不可变的对象，每次操作都会生成新的 String 对象，然后将指针指向新的 String 对象，而 StringBuffer、StringBuilder 可以在原有对象的基础上进行操作，所以在经常改变字符串内容的情况下最好不要使用 String。
+StringBuffer 和 StringBuilder 最大的区别在于，StringBuffer 是线程安全的，而 StringBuilder 是非线程安全的，但 StringBuilder 的性能却高于 StringBuffer，所以在单线程环境下推荐使用 StringBuilder，多线程环境下推荐使用 StringBuffer。
+
+##  String str="i"与 String str=new String("i")一样吗？
+不一样，因为内存的分配方式不一样。String str="i"的方式，java 虚拟机会将其分配到常量池中；而 String str=new String("i") 则会被分到堆内存中。
+
+## 如何将字符串反转？
+使用 StringBuilder 或者 stringBuffer 的 reverse() 方法。
+
+## String 类的常用方法都有那些？
+- indexOf()：返回指定字符的索引。
+- charAt()：返回指定索引处的字符。
+- replace()：字符串替换。
+- trim()：去除字符串两端空白。
+- split()：分割字符串，返回一个分割后的字符串数组。
+- getBytes()：返回字符串的 byte 类型数组。
+- length()：返回字符串长度。
+- toLowerCase()：将字符串转成小写字母。
+- toUpperCase()：将字符串转成大写字符。
+- substring()：截取字符串。
+- equals()：字符串比较。
+
+## 抽象类必须要有抽象方法吗？
+不需要，抽象类不一定非要有抽象方法。
+
+普通类不能包含抽象方法，抽象类可以包含抽象方法。
+抽象类不能直接实例化，普通类可以直接实例化。
+
+##  java 中 IO 流分为几种？
+按功能来分：输入流（input）、输出流（output）。
+按类型来分：字节流和字符流。
+字节流和字符流的区别是：字节流按 8 位传输以字节为单位输入输出数据，字符流按 16 位传输以字符为单位输入输出数据。
+
+## BIO、NIO、AIO 有什么区别？
+- BIO：Block IO 同步阻塞式 IO，就是我们平常使用的传统 IO，它的特点是模式简单使用方便，并发处理能力低。
+- NIO：New IO 同步非阻塞 IO，是传统 IO 的升级，客户端和服务器端通过 Channel（通道）通讯，实现了多路复用。
+- AIO：Asynchronous IO 是 NIO 的升级，也叫 NIO2，实现了异步非堵塞 IO ，异步 IO 的操作基于事件和回调机制。
+
+## Files的常用方法都有哪些？
+- Files.exists()：检测文件路径是否存在。
+- Files.createFile()：创建文件。
+- Files.createDirectory()：创建文件夹。
+- Files.delete()：删除一个文件或目录。
+- Files.copy()：复制文件。
+- Files.move()：移动文件。
+- Files.size()：查看文件个数。
+- Files.read()：读取文件。
+- Files.write()：写入文件。
+
+d:Td07,
+# Next.js 入门指南
+
+## 什么是 Next.js？
+
+Next.js 是一个基于 React 的前端框架，用于构建服务器端渲染 (SSR) 和静态网站生成 (SSG) 的应用程序。它由 Vercel 公司开发和维护，提供了许多开箱即用的功能，使 React 应用程序的开发变得更加简单和高效。
+
+## 主要特性
+
+### 1. 服务器端渲染 (SSR)
+
+Next.js 支持服务器端渲染，这意味着页面在服务器上生成 HTML，然后发送到客户端。这可以提高首屏加载速度，改善 SEO 表现。
+
+### 2. 静态网站生成 (SSG)
+
+Next.js 支持静态网站生成，这意味着页面在构建时生成 HTML，可以直接部署到任何静态托管服务上。这提供了最佳的性能和安全性。
+
+### 3. 自动代码分割
+
+Next.js 会自动将代码分割成小块，只加载当前页面所需的代码，减少了初始加载时间。
+
+### 4. 路由系统
+
+Next.js 提供了基于文件系统的路由系统，无需配置，简单直观。
+
+### 5. API 路由
+
+Next.js 允许在同一代码库中创建 API 端点，使前后端代码可以放在一起。
+
+## 快速开始
+
+### 1. 创建新的 Next.js 项目
+
+```bash
+npx create-next-app@latest
+```
+
+### 2. 启动开发服务器
+
+```bash
+cd your-project-name
+npm run dev
+```
+
+### 3. 构建生产版本
+
+```bash
+npm run build
+```
+
+## 项目结构
+
+Next.js 项目的典型结构如下：
+
+```
+your-project-name/
+├── app/            # App Router (Next.js 13+)
+├── pages/          # Pages Router
+├── public/         # 静态资源
+├── components/     # React 组件
+├── styles/         # 样式文件
+├── lib/            # 工具函数
+├── node_modules/
+├── package.json
+└── README.md
+```
+
+## 页面路由
+
+在 Next.js 中，页面路由是基于文件系统的。在 `app` 目录（Next.js 13+）中创建文件，即可自动生成对应的路由。
+
+例如：
+- `app/page.tsx` → `/`
+- `app/about/page.tsx` → `/about`
+- `app/blog/[id]/page.tsx` → `/blog/1` (动态路由)
+
+## 数据获取
+
+Next.js 提供了多种数据获取方法：
+
+### 1. Server Components (Next.js 13+)
+
+在 App Router 中，组件默认是服务器组件，可以直接在组件中获取数据。
+
+```tsx
+export default async function Page() {
+  const data = await fetch('https://api.example.com/data');
+  const posts = await data.json();
+  
+  return (
+    <div>
+      {posts.map((post) => (
+        <div key={post.id}>{post.title}</div>
+      ))}
+    </div>
+  );
+}
+```
+
+### 2. getStaticProps (Pages Router)
+
+用于静态网站生成，在构建时获取数据。
+
+### 3. getServerSideProps (Pages Router)
+
+用于服务器端渲染，在每个请求时获取数据。
+
+## 部署
+
+Next.js 应用程序可以部署到各种平台：
+
+### 1. Vercel
+
+Vercel 是 Next.js 的官方托管平台，提供了最佳的开发和部署体验。
+
+### 2. 其他平台
+
+Next.js 应用程序也可以部署到 Netlify、AWS、Google Cloud 等平台。
+
+## 总结
+
+Next.js 是一个功能强大的前端框架，提供了许多开箱即用的功能，使 React 应用程序的开发变得更加简单和高效。它支持服务器端渲染、静态网站生成、自动代码分割等特性，可以满足各种应用场景的需求。
+
+如果你正在寻找一个现代化的前端框架，Next.js 绝对值得一试！e:T6bf,
+## React 19的新特性与变化
+### Server Components（服务端组件）
+
+1. 性能与SEO优化
+   
+   允许在服务端直接渲染组件，减少客户端JavaScript加载量，缩短初始页面加载时间。同时支持从数据库直接获取数据并生成HTML，提升SEO友好性.
+```jsx
+export default async function Users() {
+  const res = await fetch("https://api.example.com/users"); 
+  const users = await res.json(); 
+  return users.map(user  => <div key={user.id}>{user.name}</div>); 
+}
+```
+2. 执行位置指令
+新增 'use client' 和 'use server' 指令，明确代码运行环境：
+- 'use client' 指令：标记组件为客户端组件，运行在浏览器环境
+- 'use server' 指令：标记组件为服务端组件，运行在服务端环境
+
+### Concurrent React（并发模式增强）
+
+1. Suspense for Data Fetching
+   
+   支持异步数据加载时展示加载状态，避免UI阻塞。
+
+```jsx
+<Suspense fallback={<Loading />}>
+  <ProfileDetails />
+</Suspense>
+```
+2. useTransition Hook
+   管理高优先级更新，确保用户操作（如输入）不被长任务阻塞
+
+### Actions（异步操作优化）
+1. 简化表单处理
+   直接通过 <form action={handleSubmit}> 绑定提交逻辑，自动处理加载状态和错误恢复，支持乐观更新（Optimistic Updates）
+
+2. 新Hooks支持
+   - useActionState：统一管理表单提交状态
+   - useOptimistic：实现数据提交前的即时UI反馈
+
+### 其他关键更新
+1. Automatic Batching（自动批处理）
+   所有状态更新默认合并为单次渲染，减少重复渲染次数
+2. 新Hooks引入
+   - useId：生成唯一ID用于DOM元素标识
+   - useSyncExternalStore：集成外部状态管理（如Redux）
+
+f:T15b4,
+# React 组件开发
+
+## 什么是 React 组件？
+
+React 组件是构建 React 应用程序的基本单位，它是一个可重用的 UI 元素，可以接收输入（props）并返回描述应该在屏幕上显示什么的 React 元素。
+
+## 组件类型
+
+### 1. 函数组件
+
+函数组件是一个接收 props 并返回 React 元素的 JavaScript 函数。
+
+```jsx
+function Greeting({ name }) {
+  return <h1>Hello, {name}!</h1>;
+}
+```
+
+### 2. 类组件
+
+类组件是一个继承自 React.Component 的 JavaScript 类，它必须实现 render 方法。
+
+```jsx
+class Greeting extends React.Component {
+  render() {
+    return <h1>Hello, {this.props.name}!</h1>;
+  }
+}
+```
+
+## 组件 props
+
+Props 是组件的输入，它们是只读的，组件不应该修改自己的 props。
+
+```jsx
+function Greeting({ name, age }) {
+  return (
+    <div>
+      <h1>Hello, {name}!</h1>
+      <p>You are {age} years old.</p>
+    </div>
+  );
+}
+
+// 使用组件
+<Greeting name="John" age={30} />
+```
+
+## 组件状态
+
+状态是组件内部的数据，它可以在组件的生命周期中发生变化。
+
+### 使用 useState Hook
+
+```jsx
+import { useState } from 'react';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <p>You clicked {count} times</p>
+      <button onClick={() => setCount(count + 1)}>
+        Click me
+      </button>
+    </div>
+  );
+}
+```
+
+## 组件生命周期
+
+### 函数组件的生命周期
+
+函数组件使用 Hooks 来管理生命周期：
+
+- `useEffect` - 处理副作用，如数据获取、订阅或手动更改 DOM
+
+```jsx
+import { useState, useEffect } from 'react';
+
+function Example() {
+  const [count, setCount] = useState(0);
+
+  // 相当于 componentDidMount 和 componentDidUpdate
+  useEffect(() => {
+    // 更新文档标题
+    document.title = `You clicked ${count} times`;
+  });
+
+  return (
+    <div>
+      <p>You clicked {count} times</p>
+      <button onClick={() => setCount(count + 1)}>
+        Click me
+      </button>
+    </div>
+  );
+}
+```
+
+## 组件组合
+
+组件可以组合在一起，形成更复杂的 UI。
+
+```jsx
+function Header() {
+  return <header>Header</header>;
+}
+
+function Content() {
+  return <main>Content</main>;
+}
+
+function Footer() {
+  return <footer>Footer</footer>;
+}
+
+function Layout() {
+  return (
+    <div>
+      <Header />
+      <Content />
+      <Footer />
+    </div>
+  );
+}
+```
+
+## 组件样式
+
+### 1. 内联样式
+
+```jsx
+function StyledComponent() {
+  return (
+    <div style={{ color: 'red', fontSize: '20px' }}>
+      Styled text
+    </div>
+  );
+}
+```
+
+### 2. CSS 类
+
+```jsx
+function StyledComponent() {
+  return (
+    <div className="container">
+      Styled text
+    </div>
+  );
+}
+
+// CSS 文件
+.container {
+  color: red;
+  font-size: 20px;
+}
+```
+
+### 3. CSS-in-JS
+
+使用库如 styled-components 或 emotion。
+
+```jsx
+import styled from 'styled-components';
+
+const StyledDiv = styled.div`
+  color: red;
+  font-size: 20px;
+`;
+
+function StyledComponent() {
+  return <StyledDiv>Styled text</StyledDiv>;
+}
+```
+
+## 组件测试
+
+### 使用 Jest 和 React Testing Library
+
+```jsx
+import { render, screen, fireEvent } from '@testing-library/react';
+import Counter from './Counter';
+
+test('renders counter and increments when button is clicked', () => {
+  render(<Counter />);
+  
+  // 检查初始状态
+  expect(screen.getByText('You clicked 0 times')).toBeInTheDocument();
+  
+  // 点击按钮
+  const button = screen.getByText('Click me');
+  fireEvent.click(button);
+  
+  // 检查状态是否更新
+  expect(screen.getByText('You clicked 1 times')).toBeInTheDocument();
+});
+```
+
+## 最佳实践
+
+### 1. 组件拆分
+
+将复杂的组件拆分为更小的、可重用的组件。
+
+### 2. 命名规范
+
+- 组件名称使用 PascalCase
+- 文件名称与组件名称保持一致
+
+### 3. Props 类型检查
+
+使用 TypeScript 或 PropTypes 进行类型检查。
+
+```jsx
+// 使用 TypeScript
+interface GreetingProps {
+  name: string;
+  age: number;
+}
+
+function Greeting({ name, age }: GreetingProps) {
+  return (
+    <div>
+      <h1>Hello, {name}!</h1>
+      <p>You are {age} years old.</p>
+    </div>
+  );
+}
+
+// 使用 PropTypes
+import PropTypes from 'prop-types';
+
+function Greeting({ name, age }) {
+  return (
+    <div>
+      <h1>Hello, {name}!</h1>
+      <p>You are {age} years old.</p>
+    </div>
+  );
+}
+
+Greeting.propTypes = {
+  name: PropTypes.string.isRequired,
+  age: PropTypes.number.isRequired
+};
+```
+
+### 4. 性能优化
+
+- 使用 `React.memo` 缓存组件
+- 使用 `useMemo` 缓存计算结果
+- 使用 `useCallback` 缓存函数
+
+```jsx
+import { memo, useMemo, useCallback } from 'react';
+
+const ExpensiveComponent = memo(({ data }) => {
+  // 组件内容
+});
+
+function ParentComponent() {
+  const [count, setCount] = useState(0);
+  
+  // 缓存数据
+  const expensiveData = useMemo(() => {
+    // 昂贵的计算
+    return computeExpensiveData(count);
+  }, [count]);
+  
+  // 缓存函数
+  const handleClick = useCallback(() => {
+    setCount(count + 1);
+  }, [count]);
+  
+  return (
+    <div>
+      <button onClick={handleClick}>Increment</button>
+      <ExpensiveComponent data={expensiveData} />
+    </div>
+  );
+}
+```
+
+## 总结
+
+React 组件是构建 React 应用程序的基本单位，它们可以是函数组件或类组件。组件可以接收 props 作为输入，管理内部状态，并在生命周期中执行副作用。通过组件组合，可以构建复杂的 UI 界面。
+
+遵循最佳实践，如组件拆分、命名规范、类型检查和性能优化，可以创建更可维护、更高效的 React 应用程序。10:T1649,# TypeScript 入门指南
+
+## 什么是 TypeScript？
+
+TypeScript 是 JavaScript 的超集，它添加了静态类型检查和其他特性，使代码更加可靠和可维护。TypeScript 代码会被编译为 JavaScript，可以在任何支持 JavaScript 的环境中运行。
+
+## 主要特性
+
+### 1. 静态类型检查
+
+TypeScript 提供了静态类型系统，可以在编译时发现类型错误，减少运行时错误。
+
+### 2. 类型推断
+
+TypeScript 可以根据上下文自动推断变量的类型，减少手动类型注解的需要。
+
+### 3. 接口
+
+TypeScript 允许定义接口，描述对象的结构，提供更好的代码提示和类型检查。
+
+### 4. 泛型
+
+TypeScript 支持泛型，可以编写更灵活、可重用的代码。
+
+### 5. 类
+
+TypeScript 支持类和面向对象编程特性，如继承、封装和多态。
+
+### 6. 模块
+
+TypeScript 支持模块系统，可以更好地组织代码。
+
+## 快速开始
+
+### 1. 安装 TypeScript
+
+```bash
+# 使用 npm
+npm install -g typescript
+
+# 或者使用 yarn
+yarn global add typescript
+```
+
+### 2. 创建 TypeScript 文件
+
+创建一个名为 `hello.ts` 的文件：
+
+```typescript
+function greet(name: string): string {
+  return `Hello, ${name}!`;
+}
+
+const message = greet('TypeScript');
+console.log(message);
+```
+
+### 3. 编译 TypeScript 文件
+
+```bash
+tscc hello.ts
+```
+
+这将生成一个 `hello.js` 文件，然后可以运行它：
+
+```bash
+node hello.js
+```
+
+## 基本类型
+
+TypeScript 支持以下基本类型：
+
+### 1. 原始类型
+
+- `number` - 数字
+- `string` - 字符串
+- `boolean` - 布尔值
+- `null` - 空值
+- `undefined` - 未定义
+- `symbol` - 符号
+- `bigint` - 大整数
+
+### 2. 对象类型
+
+- `object` - 普通对象
+- `array` - 数组
+- `tuple` - 元组
+- `function` - 函数
+- `class` - 类
+- `interface` - 接口
+
+## 类型注解
+
+TypeScript 允许为变量、函数参数和返回值添加类型注解：
+
+```typescript
+// 变量类型注解
+let age: number = 30;
+let name: string = 'John';
+let isActive: boolean = true;
+
+// 函数参数和返回值类型注解
+function add(a: number, b: number): number {
+  return a + b;
+}
+
+// 数组类型注解
+let numbers: number[] = [1, 2, 3];
+let strings: string[] = ['a', 'b', 'c'];
+
+// 元组类型注解
+let person: [string, number] = ['John', 30];
+
+// 对象类型注解
+let user: {
+  name: string;
+  age: number;
+  isActive: boolean;
+} = {
+  name: 'John',
+  age: 30,
+  isActive: true
+};
+```
+
+## 接口
+
+接口用于描述对象的结构：
+
+```typescript
+interface User {
+  name: string;
+  age: number;
+  isActive?: boolean; // 可选属性
+}
+
+function greetUser(user: User): string {
+  return `Hello, ${user.name}!`;
+}
+
+const john: User = {
+  name: 'John',
+  age: 30
+};
+
+console.log(greetUser(john));
+```
+
+## 类
+
+TypeScript 支持类和面向对象编程：
+
+```typescript
+class Person {
+  // 属性
+  name: string;
+  age: number;
+
+  // 构造函数
+  constructor(name: string, age: number) {
+    this.name = name;
+    this.age = age;
+  }
+
+  // 方法
+  greet(): string {
+    return `Hello, my name is ${this.name} and I am ${this.age} years old.`;
+  }
+}
+
+// 创建实例
+const person = new Person('John', 30);
+console.log(person.greet());
+```
+
+## 泛型
+
+泛型允许编写更灵活、可重用的代码：
+
+```typescript
+// 泛型函数
+function identity<T>(value: T): T {
+  return value;
+}
+
+const number = identity<number>(42);
+const string = identity<string>('Hello');
+
+// 泛型接口
+interface Box<T> {
+  value: T;
+}
+
+const numberBox: Box<number> = { value: 42 };
+const stringBox: Box<string> = { value: 'Hello' };
+
+// 泛型类
+class Stack<T> {
+  private items: T[] = [];
+
+  push(item: T): void {
+    this.items.push(item);
+  }
+
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+}
+
+const numberStack = new Stack<number>();
+numberStack.push(1);
+numberStack.push(2);
+console.log(numberStack.pop()); // 输出: 2
+```
+
+## 模块
+
+TypeScript 支持模块系统，可以更好地组织代码：
+
+### 导出模块
+
+```typescript
+// math.ts
+export function add(a: number, b: number): number {
+  return a + b;
+}
+
+export function subtract(a: number, b: number): number {
+  return a - b;
+}
+
+export const PI = 3.14;
+```
+
+### 导入模块
+
+```typescript
+// app.ts
+import { add, subtract, PI } from './math';
+
+console.log(add(1, 2)); // 输出: 3
+console.log(subtract(5, 2)); // 输出: 3
+console.log(PI); // 输出: 3.14
+```
+
+## 编译配置
+
+TypeScript 可以通过 `tsconfig.json` 文件进行配置：
+
+```json
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}
+```
+
+## 最佳实践
+
+### 1. 使用严格模式
+
+在 `tsconfig.json` 中启用 `strict: true`，可以获得更严格的类型检查。
+
+### 2. 合理使用类型注解
+
+为函数参数和返回值添加类型注解，提高代码可读性和可维护性。
+
+### 3. 使用接口
+
+为复杂对象定义接口，提供更好的代码提示和类型检查。
+
+### 4. 合理使用泛型
+
+使用泛型编写更灵活、可重用的代码。
+
+### 5. 模块化
+
+使用模块系统组织代码，提高代码的可维护性和可重用性。
+
+## 总结
+
+TypeScript 是 JavaScript 的超集，它添加了静态类型检查和其他特性，使代码更加可靠和可维护。TypeScript 支持接口、泛型、类等特性，可以编写更灵活、可重用的代码。
+
+通过使用 TypeScript，可以在编译时发现类型错误，减少运行时错误，提高代码的质量和可维护性。如果你正在开发大型应用程序，TypeScript 绝对值得一试！11:T118e,# Tailwind CSS 样式设计
+
+## 什么是 Tailwind CSS？
+
+Tailwind CSS 是一个实用优先的 CSS 框架，它提供了一组预定义的类，使您可以直接在 HTML 中构建自定义界面，而无需编写传统的 CSS。
+
+## 主要特性
+
+### 1. 实用优先
+
+Tailwind CSS 提供了大量的实用类，如 `flex`、`bg-blue-500`、`p-4` 等，使您可以直接在 HTML 中应用样式。
+
+### 2. 响应式设计
+
+Tailwind CSS 内置了响应式设计支持，使用断点前缀如 `sm:`、`md:`、`lg:`、`xl:` 等，可以轻松创建响应式界面。
+
+### 3. 可定制性
+
+Tailwind CSS 是高度可定制的，您可以通过配置文件自定义颜色、字体、间距等。
+
+### 4. 无副作用
+
+Tailwind CSS 的类是原子性的，不会产生副作用，一个类只做一件事。
+
+### 5. 工具类优先
+
+Tailwind CSS 鼓励使用工具类而不是传统的语义类，这使得代码更加一致和可维护。
+
+## 快速开始
+
+### 1. 安装 Tailwind CSS
+
+```bash
+# 使用 npm
+npm install -D tailwindcss postcss autoprefixer
+
+# 初始化配置文件
+npx tailwindcss init -p
+```
+
+### 2. 配置 Tailwind CSS
+
+在 `tailwind.config.js` 文件中配置内容路径：
+
+```javascript
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+```
+
+### 3. 添加 Tailwind 指令
+
+在 CSS 文件中添加 Tailwind 指令：
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+## 基本使用
+
+### 1. 文本样式
+
+```html
+<p class="text-lg font-medium text-gray-900 dark:text-white">
+  Hello, Tailwind CSS!
+</p>
+```
+
+### 2. 背景和边框
+
+```html
+<div class="bg-blue-500 text-white p-4 rounded-lg border border-blue-600">
+  This is a blue box
+</div>
+```
+
+### 3. 布局和间距
+
+```html
+<div class="flex justify-center items-center space-x-4">
+  <div class="p-4">Item 1</div>
+  <div class="p-4">Item 2</div>
+  <div class="p-4">Item 3</div>
+</div>
+```
+
+### 4. 响应式设计
+
+```html
+<div class="flex flex-col md:flex-row">
+  <div class="md:w-1/2 p-4">Left column</div>
+  <div class="md:w-1/2 p-4">Right column</div>
+</div>
+```
+
+## 自定义配置
+
+### 1. 自定义颜色
+
+在 `tailwind.config.js` 文件中添加自定义颜色：
+
+```javascript
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        primary: '#3b82f6',
+        secondary: '#10b981',
+        accent: '#f59e0b',
+      },
+    },
+  },
+  plugins: [],
+}
+```
+
+然后可以使用这些自定义颜色：
+
+```html
+<div class="bg-primary text-white p-4">
+  This is a primary colored box
+</div>
+```
+
+### 2. 自定义字体
+
+在 `tailwind.config.js` 文件中添加自定义字体：
+
+```javascript
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        mono: ['Fira Code', 'monospace'],
+      },
+    },
+  },
+  plugins: [],
+}
+```
+
+### 3. 自定义间距
+
+在 `tailwind.config.js` 文件中添加自定义间距：
+
+```javascript
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
+      },
+    },
+  },
+  plugins: [],
+}
+```
+
+## 组件类
+
+Tailwind CSS 允许您使用 `@apply` 指令创建组件类：
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn-primary {
+    @apply bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-sm p-6 border border-gray-200;
+  }
+}
+```
+
+然后可以使用这些组件类：
+
+```html
+<button class="btn-primary">
+  Click me
+</button>
+
+<div class="card">
+  <h3 class="text-lg font-medium">Card title</h3>
+  <p class="text-gray-600">Card content</p>
+</div>
+```
+
+## 最佳实践
+
+### 1. 使用语义化 HTML
+
+虽然 Tailwind CSS 鼓励使用工具类，但仍然应该使用语义化的 HTML 元素。
+
+### 2. 提取重复样式
+
+对于重复的样式组合，应该提取为组件类。
+
+### 3. 使用响应式设计
+
+充分利用 Tailwind CSS 的响应式设计能力，创建适应不同屏幕尺寸的界面。
+
+### 4. 保持代码整洁0:{"buildId":"4B2d2OM1Qkj0WfhwRbqlm","rsc":["$","$1","c",{"children":[["$","div",null,{"className":"flex min-h-screen bg-zinc-50","children":["$","main",null,{"className":"max-w-[1500px] mx-auto p-4","children":[["$","div",null,{"className":"flex justify-between items-center mb-8","children":[["$","div",null,{"className":"flex items-center gap-4","children":["$","h1",null,{"className":"text-3xl font-semibold","children":"知识点分析系统"}]}],["$","div",null,{"className":"flex items-center gap-6","children":["$","$L2",null,{}]}]]}],["$","$L3",null,{"articles":[{"id":1,"title":"微任务与宏任务面试题","date":"2026-02-08","summary":"微任务与宏任务面试题","file":"JavaScript\\微任务、宏任务面试题.md","category":"JavaScript","tags":["JavaScript","微任务","宏任务"]},{"id":2,"title":"JavaScript 中的微任务与宏任务","date":"2026-02-05","summary":"详细解释了 JavaScript 中的微任务与宏任务，包括它们的执行顺序、应用场景和使用方法","file":"JavaScript\\JavaScript中的微任务与宏任务.md","category":"JavaScript","tags":["JavaScript","微任务","宏任务"]},{"id":3,"title":"React Hooks 详解","date":"2026-02-05","summary":"React 常用 Hooks 详解，包括 useState、useEffect、useContext、useReducer 等核心 Hooks 的使用场景和示例","file":"React\\React_hook.md","category":"React","tags":["React","Hooks","状态管理"]},{"id":4,"title":"Vue3 核心组件","date":"2026-02-05","summary":"关于 Vue3 核心组件的详细介绍，包括定义、用途和实现方法","file":"Vue3\\vue3.md","category":"Vue3","tags":["Vue3","组件"]},{"id":5,"title":"为什么 ref 要用 .value？","date":"2026-02-08","summary":"为什么 ref 要用 .value？ Vue 3 中的 ref 是一个响应式引用，它需要使用 .value 来访问和修改其值，主要原因如下： 实现响应式 ref 内部使用了 Proxy...","file":"Vue3\\为什么 ref 要用 .value？.md","category":"Vue3","tags":[]},{"id":6,"title":"为什么 Proxy 比 defineProperty 好？","date":"2026-02-05","summary":"关于 Vue3 核心组件的详细介绍，包括定义、用途和实现方法","file":"Vue3\\为什么 Proxy 比 defineProperty 好？。.md","category":"Vue3","tags":["Vue3"]},{"id":7,"title":"WebSocket","date":"2026-02-05","summary":"WebSocket 工作原理介绍，包括握手过程、数据传输、关闭连接等核心概念","file":"WebSocket.md","category":"WebSocket","tags":["WebSocket","工作原理"]},{"id":8,"title":"Flutter 基础","date":"2026-02-05","summary":"Flutter 基础知识总结，包括 Dart 语言的基础语法、Flutter 组件的使用方法、Flutter 路由管理等核心概念","file":"Flutter\\flutter.md","category":"Flutter","tags":["Flutter","基础","面试题"]},{"id":9,"title":"qiankun","date":"2026-02-07","summary":"关于 qiankun 核心组件的详细介绍，包括定义、用途和实现方法","file":"qiankun.md","category":"qiankun","tags":["qiankun","组件"]},{"id":10,"title":"React Native","date":"2026-02-05","summary":"关于 React 高阶组件（HOC）的详细介绍，包括定义、用途和实现方法","file":"ReactNative.md","category":"ReactNative","tags":["React","HOC","组件"]},{"id":11,"title":"Java 基础","date":"2026-02-05","summary":"Java 基础知识总结，包括 JDK 和 JRE 的区别、== 和 equals 的区别、final 的作用等核心概念","file":"Java\\Java_基础.md","category":"Java","tags":["Java","基础","面试题"]},{"id":12,"title":"Next.js 入门指南","date":"2026-02-05","summary":"Next.js 入门指南，包括基本概念、主要特性、快速开始、项目结构、路由系统和部署等内容","file":"nextjs-guide.md","category":"Next.js","tags":["Next.js","React","前端框架"]},{"id":13,"title":"Markdown 渲染示例","date":"2026-02-05","summary":"使用 React Markdown 渲染的示例页面，展示了基本 Markdown 语法、代码高亮、列表、链接、表格和引用等特性","file":"example.md","category":"示例","tags":["Markdown","示例","渲染"]},{"id":14,"title":"Redux 与 React-Redux 工作原理","date":"2026-02-05","summary":"Redux 与 React-Redux 的工作原理详解，包括核心概念、工作流程和使用方法","file":"React\\Redux.md","category":"React","tags":["React","Redux","状态管理"]},{"id":15,"title":"React 面试题 2026","date":"2026-02-05","summary":"React 面试题集合，包括 React 的核心特性、组件开发、状态管理等常见面试问题","file":"React\\React面试题20260204.md","category":"React","tags":["React","面试题","核心特性"]},{"id":16,"title":"React 虚拟DOM 详解","date":"2026-02-05","summary":"React 虚拟DOM详解，包括虚拟DOM的定义、工作原理以及React组件的渲染流程","file":"React\\React_虚拟DOM.md","category":"React","tags":["React","虚拟DOM","渲染流程"]},{"id":17,"title":"React JSX 详解","date":"2026-02-05","summary":"React JSX 详解，包括 JSX 的定义、优势以及编译过程","file":"React\\React_jsx.md","category":"React","tags":["React","JSX","语法"]},{"id":18,"title":"React的Fiber架构","date":"2026-02-05","summary":"详细解释React的Fiber架构，包括工作单元拆分、优先级调度、双缓存和副作用链表等核心特点","file":"React\\React_Fiber架构.md","category":"React","tags":["React","Fiber","架构"]},{"id":19,"title":"React 19的新特性与变化","date":"2026-02-05","summary":"React 19的新特性与变化，包括服务端组件、并发模式增强、异步操作优化等核心更新","file":"React\\React_19.md","category":"React","tags":["React","React 19","新特性"]},{"id":20,"title":"React 组件开发","date":"2026-02-05","summary":"React 组件开发指南，包括组件类型、props、状态管理、生命周期、样式和最佳实践","file":"React\\React-components.md","category":"React","tags":["React","组件","开发"]},{"id":21,"title":"高阶组件（HOC）","date":"2026-02-05","summary":"关于 React 高阶组件（HOC）的详细介绍，包括定义、用途和实现方法","file":"React\\高阶组件（HOC）.md","category":"React","tags":["React","HOC","组件"]},{"id":22,"title":"typescript","date":"2026-02-08","summary":"TypeScript 入门指南 什么是 TypeScript？ TypeScript 是 JavaScript 的超集，它添加了静态类型检查和其他特性，使代码更加可靠和可维护。TypeScript...","file":"Typescript\\typescript.md","category":"Typescript","tags":[]},{"id":23,"title":"tailwind-css","date":"2026-02-08","summary":"Tailwind CSS 样式设计 什么是 Tailwind CSS？ Tailwind CSS 是一个实用优先的 CSS 框架，它提供了一组预定义的类，使您可以直接在 HTML...","file":"tailwind-css.md","category":"其他","tags":[]}],"articleContents":{"JavaScript\\微任务、宏任务面试题.md":"$4","JavaScript\\JavaScript中的微任务与宏任务.md":"$5","React\\React_hook.md":"$6","Vue3\\vue3.md":"\n## Vue 3 相比 Vue 2 有哪些核心变化？\n- 响应式系统从 Object.defineProperty → Proxy\n- Composition API（setup / ref / reactive）\n- 更好的 TypeScript 支持\n- Tree-shaking 更友好\n- 性能更好、体积更小\n\n## Proxy 响应式原理是什么？\n- 通过 Proxy 拦截 get / set\n- get 时进行依赖收集\n- set 时触发依赖更新\n- 使用 effect 管理副作用函数\n\n加分点：\n- 支持新增 / 删除属性\n- 数组、Map、Set 原生支持\n\n## ref 和 reactive 有什么区别？\n|      | ref       | reactive |\n| ---- | --------- | -------- |\n| 数据类型 | 基本类型 + 对象 | 只能对象     |\n| 访问   | `.value`  | 直接访问     |\n| 解包   | 模板自动解包    | 不需要      |\n\n\n## setup 执行时机？\n- 在 beforeCreate 之前执行\n- 此时没有 this\n- props 已经解析完成\n\n## watch 和 watchEffect 区别？\n|     | watch | watchEffect |\n| --- | ----- | ----------- |\n| 依赖  | 手动指定  | 自动收集        |\n| 时机  | 懒执行   | 立即执行        |\n| 控制力 | 高     | 简单          |\n\n## reactive 解构为什么会失去响应式？\n原因：\n- 解构会触发一次 get\n- 新变量不再被 Proxy 代理\n解决：\n- toRefs\n- toRef\n\n## computed 和 watch 区别？\ncomputed 偏“派生状态”，watch 偏“副作用”。\n\n## Vue 3 中如何优化性能？\n- shallowRef / shallowReactive\n\n- markRaw\n\n- v-memo\n\n- keep-alive\n\n- 合理拆组件","Vue3\\为什么 ref 要用 .value？.md":"$7","Vue3\\为什么 Proxy 比 defineProperty 好？。.md":"$8","WebSocket.md":"$9","Flutter\\flutter.md":"$a","qiankun.md":"$b","ReactNative.md":"\n## React Native 的核心组件有哪些？\n- React Native 的一些核心组件包括：\n- View：一个支持布局和样式的容器。\n- Text：用于显示文本。\n- Image：用于显示图片。\n- ScrollView：一个可以容纳多个组件和视图的滚动容器。\n- FlatList：一个高效渲染大量数据列表的接口。\n\n","Java\\Java_基础.md":"$c","nextjs-guide.md":"$d","example.md":"\n# Markdown 渲染示例\n\n这是一个使用 React Markdown 渲染的示例页面。\n\n## 特性\n\n- ✅ 支持基本 Markdown 语法\n- ✅ 支持 GFM (GitHub Flavored Markdown)\n- ✅ 支持代码高亮\n- ✅ 支持响应式设计\n\n## 代码示例\n\n```javascript\n// 这是一段 JavaScript 代码\nfunction greet(name) {\n  return `Hello, ${name}!`;\n}\n```\n\n```python\n# 这是一段 Python 代码\ndef greet(name):\n    return f\"Hello, {name}!\"\n```\n\n## 列表\n\n### 无序列表\n- 项目 1\n- 项目 2\n  - 子项目 2.1\n  - 子项目 2.2\n\n### 有序列表\n1. 第一步\n2. 第二步\n3. 第三步\n\n## 链接\n\n[Next.js 官方文档](https://nextjs.org/docs)\n\n## 表格\n\n| 名称 | 描述 | 价格 |\n|------|------|------|\n| 产品 1 | 描述 1 | $10 |\n| 产品 2 | 描述 2 | $20 |\n| 产品 3 | 描述 3 | $30 |\n\n## 引用\n\n> 这是一段引用文本\n> 可以跨越多行","React\\Redux.md":"\n##  Redux与React-Redux的工作原理\n### Redux核心概念：\n- Store：存储应用状态的容器\n- Action：描述发生了什么的普通对象\n- Reducer：指定如何更新状态的纯函数\n- Dispatch：将action发送到store的方法\n\n### React-Redux是连接Redux和React的库：\n- Provider组件：将Redux store注入React应用\n- connect高阶组件：连接组件和Redux store\n- useSelector和useDispatch：hooks方式访问store\n\n工作流程：\n1. 组件dispatch一个action\n2. Redux store调用reducer\n3. reducer计算新状态并返回\n4. store更新状态\n5. 连接到store的组件接收新状态并重新渲染\n","React\\React面试题20260204.md":"\n## React的核心特性有哪些？\n\n- 声明式编程：React通过声明式编写UI，使代码更加可预测和易于调试\n- 组件化：构建封装管理自身状态的组件，然后组合它们以构成复杂UI\n- 单向数据流：父组件通过props向下传递数据到子组件，保证了数据的可控性\n- 虚拟DOM：通过虚拟DOM提高性能，减少实际DOM操作\n- JSX语法：结合JavaScript与HTML的语法糖，提高开发效率\n- 跨平台：通过React Native可实现跨平台开发\n\n\n\n## ","React\\React_虚拟DOM.md":"\n## 虚拟DOM是什么？解释其工作原理\n\n虚拟DOM(Virtual DOM)是React中的核心概念，是对实际DOM的一种轻量级JavaScript对象表示。\n工作原理：\n\n1. 创建阶段：React通过JSX创建虚拟DOM树\n2. Diffing阶段：当状态或属性变化时，创建新的虚拟DOM树并与旧树进行对比\n3. 协调阶段：找出需要更新的节点\n4. 提交阶段：将变更应用到实际DOM\n\n优势：\n\n- 批量处理DOM更新，减少DOM操作次数\n- 跨平台能力（可渲染到不同平台）\n- 声明式编程，简化开发\n\n## React组件渲染流程是怎样的？\n\nReact组件从渲染到呈现的完整流程：\n\n\n1. 触发渲染：首次渲染、state变化或context变化\n\n\n2. 组件渲染阶段：\n\n- 对函数组件调用函数体\n- 对类组件调用render()方法\n- 递归渲染子组件\n\n\n\n\n3. 协调过程：\n\n- 生成新的虚拟DOM树\n- 与旧树进行Diff比较\n- 标记需要进行的DOM操作\n\n\n\n\n4. 提交阶段：\n\n- 应用所有DOM更新\n- 调用生命周期方法/Effect钩子\n","React\\React_jsx.md":"\n## 什么是JSX？为什么使用它？\nJSX是JavaScript的语法扩展，允许在JavaScript中编写类似HTML的代码。\n```jsx\nconst element = <h1>Hello, world!</h1>;\n```\n\nJSX的优势：\n- 直观地描述UI应该呈现出的交互效果\n- 将标记语言与逻辑代码共同存放，实现关注点分离\n- 通过Babel会被编译为React.createElement()调用\n- 有助于防止XSS攻击，因为React DOM会自动转义JSX中的内容\n\n## JSX 是怎么被浏览器识别的？\n```\nJSX\n ↓（Babel 编译）\nReact.createElement\n ↓\nVirtual DOM（JS 对象树）\n ↓\nDiff 算法\n ↓\n最小化 DOM 操作\n ↓\n真实 DOM\n\n```\n","React\\React_Fiber架构.md":"\n## 详细解释React的Fiber架构\n\nFiber是React 16引入的新协调引擎，主要解决React在进行大量渲染时可能阻塞主线程的问题。\n核心特点：\n\n- **工作单元拆分**：将渲染工作分割成小单元，每个单元可以被中断\n- **优先级调度**：不同更新赋予不同优先级，紧急任务可以插队\n- **双缓存**：构建两棵树（current树和workInProgress树）实现高效更新\n- **副作用链表**：记录需要执行的DOM操作，统一处理\n\nFiber实现了\"可中断渲染\"与\"优先级排序\"，使React应用在处理大量数据时保持响应性。\n","React\\React_19.md":"$e","React\\React-components.md":"$f","React\\高阶组件（HOC）.md":"\n## 什么是高阶组件（HOC）？\n高阶组件是重用组件逻辑的高级方法，是一种源于 React 的组件模式。HOC 是自定义组件，在它之内包含另一个组件。它们可以接受子组件提供的任何动态，但不会修改或复制其输入组件中的任何行为。你可以认为 HOC 是“纯（Pure）”组件。\n\n## 你能用HOC做什么？\n1. 代码重用，逻辑和引导抽象\n2. 渲染劫持\n3. 状态抽象和控制\n4. Props 控制\n","Typescript\\typescript.md":"$10","tailwind-css.md":"$11"},"graphData":{"nodes":[{"id":"react","label":"React","group":1,"size":20},{"id":"next.js","label":"Next.js","group":1,"size":20},{"id":"javascript","label":"JavaScript","group":3,"size":20},{"id":"java","label":"Java","group":3,"size":20},{"id":"python","label":"Python","group":3,"size":4},{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20},{"id":"markdown","label":"Markdown","group":3,"size":14},{"id":"git","label":"Git","group":4,"size":6},{"id":"ava","label":"AVA","group":4,"size":20},{"id":"flutter","label":"Flutter","group":1,"size":20},{"id":"组件","label":"组件","group":2,"size":20},{"id":"go","label":"Go","group":3,"size":6},{"id":"dart","label":"Dart","group":3,"size":14},{"id":"props","label":"Props","group":2,"size":20},{"id":"server-components","label":"Server Components","group":2,"size":4},{"id":"html","label":"HTML","group":3,"size":20},{"id":"json","label":"JSON","group":3,"size":16},{"id":"npm","label":"npm","group":4,"size":12},{"id":"qiankun","label":"qiankun","group":1,"size":20},{"id":"express","label":"Express","group":1,"size":2},{"id":"koa","label":"Koa","group":1,"size":2},{"id":"cors","label":"CORS","group":2,"size":2},{"id":"graphql","label":"GraphQL","group":3,"size":2},{"id":"nx","label":"NX","group":4,"size":8},{"id":"状态管理","label":"状态管理","group":2,"size":6},{"id":"hooks","label":"Hooks","group":2,"size":16},{"id":"jsx","label":"JSX","group":2,"size":20},{"id":"usestate","label":"useState","group":2,"size":20},{"id":"useeffect","label":"useEffect","group":2,"size":20},{"id":"usecallback","label":"useCallback","group":2,"size":14},{"id":"usememo","label":"useMemo","group":2,"size":18},{"id":"typescript","label":"TypeScript","group":3,"size":20},{"id":"css","label":"CSS","group":3,"size":20},{"id":"jest","label":"Jest","group":4,"size":2},{"id":"testing-library","label":"Testing Library","group":4,"size":2},{"id":"redux","label":"Redux","group":2,"size":20},{"id":"suspense","label":"Suspense","group":2,"size":6},{"id":"fiber","label":"Fiber","group":2,"size":10},{"id":"ref","label":"Ref","group":2,"size":20},{"id":"usecontext","label":"useContext","group":2,"size":6},{"id":"usereducer","label":"useReducer","group":2,"size":6},{"id":"useref","label":"useRef","group":2,"size":4},{"id":"uselayouteffect","label":"useLayoutEffect","group":2,"size":14},{"id":"自定义hook","label":"自定义Hook","group":2,"size":8},{"id":"高阶组件","label":"高阶组件","group":2,"size":14},{"id":"xss","label":"XSS","group":2,"size":2},{"id":"babel","label":"Babel","group":4,"size":4},{"id":"虚拟dom","label":"虚拟DOM","group":2,"size":20},{"id":"react-native","label":"React Native","group":1,"size":8},{"id":"yarn","label":"yarn","group":4,"size":4},{"id":"vue","label":"Vue","group":1,"size":20},{"id":"proxy","label":"Proxy","group":2,"size":20},{"id":"defineproperty","label":"defineProperty","group":2,"size":20},{"id":"chef","label":"Chef","group":4,"size":4}],"links":[{"source":"react","target":"next.js","value":2,"label":"related-to"},{"source":"react","target":"javascript","value":7,"label":"written-in"},{"source":"react","target":"java","value":7,"label":"written-in"},{"source":"react","target":"python","value":1,"label":"written-in"},{"source":"react","target":"c","value":14,"label":"written-in"},{"source":"react","target":"r","value":14,"label":"written-in"},{"source":"react","target":"markdown","value":1,"label":"written-in"},{"source":"react","target":"git","value":1,"label":"built-with"},{"source":"react","target":"ava","value":7,"label":"built-with"},{"source":"next.js","target":"javascript","value":1,"label":"written-in"},{"source":"next.js","target":"java","value":1,"label":"written-in"},{"source":"next.js","target":"python","value":1,"label":"written-in"},{"source":"next.js","target":"c","value":2,"label":"written-in"},{"source":"next.js","target":"r","value":2,"label":"written-in"},{"source":"next.js","target":"markdown","value":1,"label":"written-in"},{"source":"next.js","target":"git","value":1,"label":"built-with"},{"source":"next.js","target":"ava","value":1,"label":"built-with"},{"source":"javascript","target":"java","value":10,"label":"related-to"},{"source":"javascript","target":"python","value":1,"label":"related-to"},{"source":"javascript","target":"c","value":10,"label":"related-to"},{"source":"javascript","target":"r","value":10,"label":"related-to"},{"source":"javascript","target":"markdown","value":1,"label":"related-to"},{"source":"javascript","target":"git","value":1,"label":"used-with"},{"source":"javascript","target":"ava","value":10,"label":"used-with"},{"source":"java","target":"python","value":1,"label":"related-to"},{"source":"java","target":"c","value":11,"label":"related-to"},{"source":"java","target":"r","value":11,"label":"related-to"},{"source":"java","target":"markdown","value":1,"label":"related-to"},{"source":"java","target":"git","value":1,"label":"used-with"},{"source":"java","target":"ava","value":11,"label":"used-with"},{"source":"python","target":"c","value":1,"label":"related-to"},{"source":"python","target":"r","value":1,"label":"related-to"},{"source":"python","target":"markdown","value":1,"label":"related-to"},{"source":"python","target":"git","value":1,"label":"used-with"},{"source":"python","target":"ava","value":1,"label":"used-with"},{"source":"c","target":"r","value":23,"label":"related-to"},{"source":"c","target":"markdown","value":1,"label":"related-to"},{"source":"c","target":"git","value":2,"label":"used-with"},{"source":"c","target":"ava","value":11,"label":"used-with"},{"source":"r","target":"markdown","value":1,"label":"related-to"},{"source":"r","target":"git","value":2,"label":"used-with"},{"source":"r","target":"ava","value":11,"label":"used-with"},{"source":"markdown","target":"git","value":1,"label":"used-with"},{"source":"markdown","target":"ava","value":1,"label":"used-with"},{"source":"git","target":"ava","value":1,"label":"integrates-with"},{"source":"flutter","target":"组件","value":1,"label":"uses"},{"source":"flutter","target":"go","value":1,"label":"written-in"},{"source":"flutter","target":"dart","value":1,"label":"written-in"},{"source":"flutter","target":"c","value":1,"label":"written-in"},{"source":"flutter","target":"r","value":1,"label":"written-in"},{"source":"flutter","target":"git","value":1,"label":"built-with"},{"source":"组件","target":"go","value":2,"label":"applied-in"},{"source":"组件","target":"dart","value":1,"label":"applied-in"},{"source":"组件","target":"c","value":15,"label":"applied-in"},{"source":"组件","target":"r","value":15,"label":"applied-in"},{"source":"组件","target":"git","value":1,"label":"used-by"},{"source":"go","target":"dart","value":1,"label":"related-to"},{"source":"go","target":"c","value":2,"label":"related-to"},{"source":"go","target":"r","value":2,"label":"related-to"},{"source":"go","target":"git","value":1,"label":"used-with"},{"source":"dart","target":"c","value":1,"label":"related-to"},{"source":"dart","target":"r","value":1,"label":"related-to"},{"source":"dart","target":"git","value":1,"label":"used-with"},{"source":"react","target":"组件","value":11,"label":"uses"},{"source":"react","target":"props","value":6,"label":"uses"},{"source":"react","target":"server-components","value":2,"label":"uses"},{"source":"react","target":"go","value":1,"label":"written-in"},{"source":"react","target":"html","value":4,"label":"written-in"},{"source":"react","target":"json","value":2,"label":"written-in"},{"source":"react","target":"npm","value":1,"label":"built-with"},{"source":"next.js","target":"组件","value":1,"label":"uses"},{"source":"next.js","target":"props","value":1,"label":"uses"},{"source":"next.js","target":"server-components","value":1,"label":"uses"},{"source":"next.js","target":"go","value":1,"label":"written-in"},{"source":"next.js","target":"html","value":1,"label":"written-in"},{"source":"next.js","target":"json","value":1,"label":"written-in"},{"source":"next.js","target":"npm","value":1,"label":"built-with"},{"source":"组件","target":"props","value":6,"label":"related-to"},{"source":"组件","target":"server-components","value":2,"label":"related-to"},{"source":"组件","target":"html","value":5,"label":"applied-in"},{"source":"组件","target":"json","value":3,"label":"applied-in"},{"source":"组件","target":"npm","value":2,"label":"used-by"},{"source":"props","target":"server-components","value":1,"label":"related-to"},{"source":"props","target":"go","value":1,"label":"applied-in"},{"source":"props","target":"html","value":2,"label":"applied-in"},{"source":"props","target":"c","value":6,"label":"applied-in"},{"source":"props","target":"r","value":6,"label":"applied-in"},{"source":"props","target":"json","value":1,"label":"applied-in"},{"source":"props","target":"npm","value":1,"label":"used-by"},{"source":"server-components","target":"go","value":1,"label":"applied-in"},{"source":"server-components","target":"html","value":2,"label":"applied-in"},{"source":"server-components","target":"c","value":2,"label":"applied-in"},{"source":"server-components","target":"r","value":2,"label":"applied-in"},{"source":"server-components","target":"json","value":2,"label":"applied-in"},{"source":"server-components","target":"npm","value":1,"label":"used-by"},{"source":"go","target":"html","value":1,"label":"related-to"},{"source":"go","target":"json","value":1,"label":"related-to"},{"source":"go","target":"npm","value":1,"label":"used-with"},{"source":"html","target":"c","value":6,"label":"related-to"},{"source":"html","target":"r","value":6,"label":"related-to"},{"source":"html","target":"json","value":3,"label":"related-to"},{"source":"html","target":"npm","value":2,"label":"used-with"},{"source":"c","target":"json","value":5,"label":"related-to"},{"source":"c","target":"npm","value":3,"label":"used-with"},{"source":"r","target":"json","value":5,"label":"related-to"},{"source":"r","target":"npm","value":3,"label":"used-with"},{"source":"json","target":"npm","value":2,"label":"used-with"},{"source":"qiankun","target":"express","value":1,"label":"related-to"},{"source":"qiankun","target":"koa","value":1,"label":"related-to"},{"source":"qiankun","target":"组件","value":1,"label":"uses"},{"source":"qiankun","target":"cors","value":1,"label":"uses"},{"source":"qiankun","target":"html","value":1,"label":"written-in"},{"source":"qiankun","target":"c","value":1,"label":"written-in"},{"source":"qiankun","target":"r","value":1,"label":"written-in"},{"source":"qiankun","target":"json","value":1,"label":"written-in"},{"source":"qiankun","target":"graphql","value":1,"label":"written-in"},{"source":"qiankun","target":"nx","value":1,"label":"built-with"},{"source":"express","target":"koa","value":1,"label":"related-to"},{"source":"express","target":"组件","value":1,"label":"uses"},{"source":"express","target":"cors","value":1,"label":"uses"},{"source":"express","target":"html","value":1,"label":"written-in"},{"source":"express","target":"c","value":1,"label":"written-in"},{"source":"express","target":"r","value":1,"label":"written-in"},{"source":"express","target":"json","value":1,"label":"written-in"},{"source":"express","target":"graphql","value":1,"label":"written-in"},{"source":"express","target":"nx","value":1,"label":"built-with"},{"source":"koa","target":"组件","value":1,"label":"uses"},{"source":"koa","target":"cors","value":1,"label":"uses"},{"source":"koa","target":"html","value":1,"label":"written-in"},{"source":"koa","target":"c","value":1,"label":"written-in"},{"source":"koa","target":"r","value":1,"label":"written-in"},{"source":"koa","target":"json","value":1,"label":"written-in"},{"source":"koa","target":"graphql","value":1,"label":"written-in"},{"source":"koa","target":"nx","value":1,"label":"built-with"},{"source":"组件","target":"cors","value":1,"label":"related-to"},{"source":"组件","target":"graphql","value":1,"label":"applied-in"},{"source":"组件","target":"nx","value":1,"label":"used-by"},{"source":"cors","target":"html","value":1,"label":"applied-in"},{"source":"cors","target":"c","value":1,"label":"applied-in"},{"source":"cors","target":"r","value":1,"label":"applied-in"},{"source":"cors","target":"json","value":1,"label":"applied-in"},{"source":"cors","target":"graphql","value":1,"label":"applied-in"},{"source":"cors","target":"nx","value":1,"label":"used-by"},{"source":"html","target":"graphql","value":1,"label":"related-to"},{"source":"html","target":"nx","value":1,"label":"used-with"},{"source":"c","target":"graphql","value":1,"label":"related-to"},{"source":"c","target":"nx","value":2,"label":"used-with"},{"source":"r","target":"graphql","value":1,"label":"related-to"},{"source":"r","target":"nx","value":2,"label":"used-with"},{"source":"json","target":"graphql","value":1,"label":"related-to"},{"source":"json","target":"nx","value":2,"label":"used-with"},{"source":"graphql","target":"nx","value":1,"label":"used-with"},{"source":"react","target":"状态管理","value":3,"label":"uses"},{"source":"react","target":"hooks","value":4,"label":"uses"},{"source":"react","target":"jsx","value":6,"label":"uses"},{"source":"react","target":"usestate","value":2,"label":"uses"},{"source":"react","target":"useeffect","value":2,"label":"uses"},{"source":"react","target":"usecallback","value":2,"label":"uses"},{"source":"react","target":"usememo","value":2,"label":"uses"},{"source":"react","target":"typescript","value":3,"label":"written-in"},{"source":"react","target":"css","value":1,"label":"written-in"},{"source":"react","target":"jest","value":1,"label":"built-with"},{"source":"react","target":"testing-library","value":1,"label":"built-with"},{"source":"组件","target":"状态管理","value":3,"label":"related-to"},{"source":"组件","target":"hooks","value":4,"label":"related-to"},{"source":"组件","target":"jsx","value":6,"label":"related-to"},{"source":"组件","target":"usestate","value":2,"label":"related-to"},{"source":"组件","target":"useeffect","value":2,"label":"related-to"},{"source":"组件","target":"usecallback","value":2,"label":"related-to"},{"source":"组件","target":"usememo","value":2,"label":"related-to"},{"source":"组件","target":"javascript","value":6,"label":"applied-in"},{"source":"组件","target":"typescript","value":3,"label":"applied-in"},{"source":"组件","target":"java","value":6,"label":"applied-in"},{"source":"组件","target":"css","value":2,"label":"applied-in"},{"source":"组件","target":"jest","value":1,"label":"used-by"},{"source":"组件","target":"testing-library","value":1,"label":"used-by"},{"source":"组件","target":"ava","value":6,"label":"used-by"},{"source":"状态管理","target":"props","value":2,"label":"related-to"},{"source":"状态管理","target":"hooks","value":2,"label":"related-to"},{"source":"状态管理","target":"jsx","value":3,"label":"related-to"},{"source":"状态管理","target":"usestate","value":1,"label":"related-to"},{"source":"状态管理","target":"useeffect","value":1,"label":"related-to"},{"source":"状态管理","target":"usecallback","value":1,"label":"related-to"},{"source":"状态管理","target":"usememo","value":1,"label":"related-to"},{"source":"状态管理","target":"javascript","value":3,"label":"applied-in"},{"source":"状态管理","target":"typescript","value":1,"label":"applied-in"},{"source":"状态管理","target":"java","value":3,"label":"applied-in"},{"source":"状态管理","target":"css","value":1,"label":"applied-in"},{"source":"状态管理","target":"c","value":3,"label":"applied-in"},{"source":"状态管理","target":"r","value":3,"label":"applied-in"},{"source":"状态管理","target":"jest","value":1,"label":"used-by"},{"source":"状态管理","target":"testing-library","value":1,"label":"used-by"},{"source":"状态管理","target":"ava","value":3,"label":"used-by"},{"source":"props","target":"hooks","value":2,"label":"related-to"},{"source":"props","target":"jsx","value":3,"label":"related-to"},{"source":"props","target":"usestate","value":2,"label":"related-to"},{"source":"props","target":"useeffect","value":2,"label":"related-to"},{"source":"props","target":"usecallback","value":2,"label":"related-to"},{"source":"props","target":"usememo","value":2,"label":"related-to"},{"source":"props","target":"javascript","value":2,"label":"applied-in"},{"source":"props","target":"typescript","value":2,"label":"applied-in"},{"source":"props","target":"java","value":2,"label":"applied-in"},{"source":"props","target":"css","value":1,"label":"applied-in"},{"source":"props","target":"jest","value":1,"label":"used-by"},{"source":"props","target":"testing-library","value":1,"label":"used-by"},{"source":"props","target":"ava","value":2,"label":"used-by"},{"source":"hooks","target":"jsx","value":3,"label":"related-to"},{"source":"hooks","target":"usestate","value":2,"label":"related-to"},{"source":"hooks","target":"useeffect","value":2,"label":"related-to"},{"source":"hooks","target":"usecallback","value":2,"label":"related-to"},{"source":"hooks","target":"usememo","value":2,"label":"related-to"},{"source":"hooks","target":"javascript","value":2,"label":"applied-in"},{"source":"hooks","target":"typescript","value":1,"label":"applied-in"},{"source":"hooks","target":"java","value":2,"label":"applied-in"},{"source":"hooks","target":"css","value":1,"label":"applied-in"},{"source":"hooks","target":"c","value":4,"label":"applied-in"},{"source":"hooks","target":"r","value":4,"label":"applied-in"},{"source":"hooks","target":"jest","value":1,"label":"used-by"},{"source":"hooks","target":"testing-library","value":1,"label":"used-by"},{"source":"hooks","target":"ava","value":2,"label":"used-by"},{"source":"jsx","target":"usestate","value":2,"label":"related-to"},{"source":"jsx","target":"useeffect","value":2,"label":"related-to"},{"source":"jsx","target":"usecallback","value":2,"label":"related-to"},{"source":"jsx","target":"usememo","value":2,"label":"related-to"},{"source":"jsx","target":"javascript","value":6,"label":"applied-in"},{"source":"jsx","target":"typescript","value":1,"label":"applied-in"},{"source":"jsx","target":"java","value":6,"label":"applied-in"},{"source":"jsx","target":"css","value":2,"label":"applied-in"},{"source":"jsx","target":"c","value":7,"label":"applied-in"},{"source":"jsx","target":"r","value":7,"label":"applied-in"},{"source":"jsx","target":"jest","value":1,"label":"used-by"},{"source":"jsx","target":"testing-library","value":1,"label":"used-by"},{"source":"jsx","target":"ava","value":6,"label":"used-by"},{"source":"usestate","target":"useeffect","value":2,"label":"related-to"},{"source":"usestate","target":"usecallback","value":2,"label":"related-to"},{"source":"usestate","target":"usememo","value":2,"label":"related-to"},{"source":"usestate","target":"javascript","value":1,"label":"applied-in"},{"source":"usestate","target":"typescript","value":1,"label":"applied-in"},{"source":"usestate","target":"java","value":1,"label":"applied-in"},{"source":"usestate","target":"css","value":1,"label":"applied-in"},{"source":"usestate","target":"c","value":2,"label":"applied-in"},{"source":"usestate","target":"r","value":2,"label":"applied-in"},{"source":"usestate","target":"jest","value":1,"label":"used-by"},{"source":"usestate","target":"testing-library","value":1,"label":"used-by"},{"source":"usestate","target":"ava","value":1,"label":"used-by"},{"source":"useeffect","target":"usecallback","value":2,"label":"related-to"},{"source":"useeffect","target":"usememo","value":2,"label":"related-to"},{"source":"useeffect","target":"javascript","value":1,"label":"applied-in"},{"source":"useeffect","target":"typescript","value":1,"label":"applied-in"},{"source":"useeffect","target":"java","value":1,"label":"applied-in"},{"source":"useeffect","target":"css","value":1,"label":"applied-in"},{"source":"useeffect","target":"c","value":2,"label":"applied-in"},{"source":"useeffect","target":"r","value":2,"label":"applied-in"},{"source":"useeffect","target":"jest","value":1,"label":"used-by"},{"source":"useeffect","target":"testing-library","value":1,"label":"used-by"},{"source":"useeffect","target":"ava","value":1,"label":"used-by"},{"source":"usecallback","target":"usememo","value":2,"label":"related-to"},{"source":"usecallback","target":"javascript","value":1,"label":"applied-in"},{"source":"usecallback","target":"typescript","value":1,"label":"applied-in"},{"source":"usecallback","target":"java","value":1,"label":"applied-in"},{"source":"usecallback","target":"css","value":1,"label":"applied-in"},{"source":"usecallback","target":"c","value":2,"label":"applied-in"},{"source":"usecallback","target":"r","value":2,"label":"applied-in"},{"source":"usecallback","target":"jest","value":1,"label":"used-by"},{"source":"usecallback","target":"testing-library","value":1,"label":"used-by"},{"source":"usecallback","target":"ava","value":1,"label":"used-by"},{"source":"usememo","target":"javascript","value":1,"label":"applied-in"},{"source":"usememo","target":"typescript","value":1,"label":"applied-in"},{"source":"usememo","target":"java","value":1,"label":"applied-in"},{"source":"usememo","target":"css","value":1,"label":"applied-in"},{"source":"usememo","target":"c","value":2,"label":"applied-in"},{"source":"usememo","target":"r","value":2,"label":"applied-in"},{"source":"usememo","target":"jest","value":1,"label":"used-by"},{"source":"usememo","target":"testing-library","value":1,"label":"used-by"},{"source":"usememo","target":"ava","value":1,"label":"used-by"},{"source":"javascript","target":"typescript","value":3,"label":"related-to"},{"source":"javascript","target":"css","value":2,"label":"related-to"},{"source":"javascript","target":"jest","value":1,"label":"used-with"},{"source":"javascript","target":"testing-library","value":1,"label":"used-with"},{"source":"typescript","target":"java","value":3,"label":"related-to"},{"source":"typescript","target":"css","value":1,"label":"related-to"},{"source":"typescript","target":"c","value":4,"label":"related-to"},{"source":"typescript","target":"r","value":4,"label":"related-to"},{"source":"typescript","target":"jest","value":1,"label":"used-with"},{"source":"typescript","target":"testing-library","value":1,"label":"used-with"},{"source":"typescript","target":"ava","value":3,"label":"used-with"},{"source":"java","target":"css","value":2,"label":"related-to"},{"source":"java","target":"jest","value":1,"label":"used-with"},{"source":"java","target":"testing-library","value":1,"label":"used-with"},{"source":"css","target":"c","value":2,"label":"related-to"},{"source":"css","target":"r","value":2,"label":"related-to"},{"source":"css","target":"jest","value":1,"label":"used-with"},{"source":"css","target":"testing-library","value":1,"label":"used-with"},{"source":"css","target":"ava","value":2,"label":"used-with"},{"source":"c","target":"jest","value":1,"label":"used-with"},{"source":"c","target":"testing-library","value":1,"label":"used-with"},{"source":"r","target":"jest","value":1,"label":"used-with"},{"source":"r","target":"testing-library","value":1,"label":"used-with"},{"source":"jest","target":"testing-library","value":1,"label":"integrates-with"},{"source":"jest","target":"ava","value":1,"label":"integrates-with"},{"source":"testing-library","target":"ava","value":1,"label":"integrates-with"},{"source":"react","target":"redux","value":2,"label":"uses"},{"source":"react","target":"suspense","value":1,"label":"uses"},{"source":"组件","target":"redux","value":2,"label":"related-to"},{"source":"组件","target":"suspense","value":1,"label":"related-to"},{"source":"状态管理","target":"redux","value":1,"label":"related-to"},{"source":"状态管理","target":"suspense","value":1,"label":"related-to"},{"source":"状态管理","target":"server-components","value":1,"label":"related-to"},{"source":"状态管理","target":"html","value":2,"label":"applied-in"},{"source":"状态管理","target":"json","value":1,"label":"applied-in"},{"source":"hooks","target":"redux","value":2,"label":"related-to"},{"source":"hooks","target":"suspense","value":1,"label":"related-to"},{"source":"hooks","target":"server-components","value":1,"label":"related-to"},{"source":"hooks","target":"html","value":1,"label":"applied-in"},{"source":"hooks","target":"json","value":1,"label":"applied-in"},{"source":"jsx","target":"redux","value":1,"label":"related-to"},{"source":"jsx","target":"suspense","value":1,"label":"related-to"},{"source":"jsx","target":"server-components","value":1,"label":"related-to"},{"source":"jsx","target":"html","value":4,"label":"applied-in"},{"source":"jsx","target":"json","value":1,"label":"applied-in"},{"source":"redux","target":"suspense","value":1,"label":"related-to"},{"source":"redux","target":"server-components","value":1,"label":"related-to"},{"source":"redux","target":"javascript","value":1,"label":"applied-in"},{"source":"redux","target":"java","value":1,"label":"applied-in"},{"source":"redux","target":"html","value":1,"label":"applied-in"},{"source":"redux","target":"c","value":2,"label":"applied-in"},{"source":"redux","target":"r","value":2,"label":"applied-in"},{"source":"redux","target":"json","value":1,"label":"applied-in"},{"source":"redux","target":"ava","value":1,"label":"used-by"},{"source":"suspense","target":"server-components","value":1,"label":"related-to"},{"source":"suspense","target":"javascript","value":1,"label":"applied-in"},{"source":"suspense","target":"java","value":1,"label":"applied-in"},{"source":"suspense","target":"html","value":1,"label":"applied-in"},{"source":"suspense","target":"c","value":1,"label":"applied-in"},{"source":"suspense","target":"r","value":1,"label":"applied-in"},{"source":"suspense","target":"json","value":1,"label":"applied-in"},{"source":"suspense","target":"ava","value":1,"label":"used-by"},{"source":"server-components","target":"javascript","value":1,"label":"applied-in"},{"source":"server-components","target":"java","value":1,"label":"applied-in"},{"source":"server-components","target":"ava","value":1,"label":"used-by"},{"source":"javascript","target":"html","value":4,"label":"related-to"},{"source":"javascript","target":"json","value":2,"label":"related-to"},{"source":"java","target":"html","value":4,"label":"related-to"},{"source":"java","target":"json","value":2,"label":"related-to"},{"source":"html","target":"ava","value":4,"label":"used-with"},{"source":"json","target":"ava","value":2,"label":"used-with"},{"source":"react","target":"fiber","value":1,"label":"uses"},{"source":"fiber","target":"c","value":1,"label":"applied-in"},{"source":"fiber","target":"r","value":1,"label":"applied-in"},{"source":"react","target":"ref","value":3,"label":"uses"},{"source":"react","target":"usecontext","value":1,"label":"uses"},{"source":"react","target":"usereducer","value":1,"label":"uses"},{"source":"react","target":"useref","value":1,"label":"uses"},{"source":"react","target":"uselayouteffect","value":1,"label":"uses"},{"source":"react","target":"自定义hook","value":1,"label":"uses"},{"source":"react","target":"高阶组件","value":4,"label":"uses"},{"source":"组件","target":"ref","value":4,"label":"related-to"},{"source":"组件","target":"usecontext","value":1,"label":"related-to"},{"source":"组件","target":"usereducer","value":1,"label":"related-to"},{"source":"组件","target":"useref","value":1,"label":"related-to"},{"source":"组件","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"组件","target":"自定义hook","value":1,"label":"related-to"},{"source":"组件","target":"高阶组件","value":4,"label":"related-to"},{"source":"props","target":"ref","value":2,"label":"related-to"},{"source":"props","target":"usecontext","value":1,"label":"related-to"},{"source":"props","target":"usereducer","value":1,"label":"related-to"},{"source":"props","target":"useref","value":1,"label":"related-to"},{"source":"props","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"props","target":"自定义hook","value":1,"label":"related-to"},{"source":"props","target":"高阶组件","value":2,"label":"related-to"},{"source":"hooks","target":"ref","value":1,"label":"related-to"},{"source":"hooks","target":"usecontext","value":1,"label":"related-to"},{"source":"hooks","target":"usereducer","value":1,"label":"related-to"},{"source":"hooks","target":"useref","value":1,"label":"related-to"},{"source":"hooks","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"hooks","target":"自定义hook","value":1,"label":"related-to"},{"source":"hooks","target":"高阶组件","value":2,"label":"related-to"},{"source":"ref","target":"jsx","value":2,"label":"related-to"},{"source":"ref","target":"usestate","value":1,"label":"related-to"},{"source":"ref","target":"useeffect","value":1,"label":"related-to"},{"source":"ref","target":"usecontext","value":1,"label":"related-to"},{"source":"ref","target":"usereducer","value":1,"label":"related-to"},{"source":"ref","target":"usecallback","value":1,"label":"related-to"},{"source":"ref","target":"usememo","value":1,"label":"related-to"},{"source":"ref","target":"useref","value":1,"label":"related-to"},{"source":"ref","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"ref","target":"自定义hook","value":1,"label":"related-to"},{"source":"ref","target":"高阶组件","value":1,"label":"related-to"},{"source":"ref","target":"c","value":4,"label":"applied-in"},{"source":"ref","target":"r","value":4,"label":"applied-in"},{"source":"jsx","target":"usecontext","value":1,"label":"related-to"},{"source":"jsx","target":"usereducer","value":1,"label":"related-to"},{"source":"jsx","target":"useref","value":1,"label":"related-to"},{"source":"jsx","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"jsx","target":"自定义hook","value":1,"label":"related-to"},{"source":"jsx","target":"高阶组件","value":1,"label":"related-to"},{"source":"usestate","target":"usecontext","value":1,"label":"related-to"},{"source":"usestate","target":"usereducer","value":1,"label":"related-to"},{"source":"usestate","target":"useref","value":1,"label":"related-to"},{"source":"usestate","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"usestate","target":"自定义hook","value":1,"label":"related-to"},{"source":"usestate","target":"高阶组件","value":1,"label":"related-to"},{"source":"useeffect","target":"usecontext","value":1,"label":"related-to"},{"source":"useeffect","target":"usereducer","value":1,"label":"related-to"},{"source":"useeffect","target":"useref","value":1,"label":"related-to"},{"source":"useeffect","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"useeffect","target":"自定义hook","value":1,"label":"related-to"},{"source":"useeffect","target":"高阶组件","value":1,"label":"related-to"},{"source":"usecontext","target":"usereducer","value":1,"label":"related-to"},{"source":"usecontext","target":"usecallback","value":1,"label":"related-to"},{"source":"usecontext","target":"usememo","value":1,"label":"related-to"},{"source":"usecontext","target":"useref","value":1,"label":"related-to"},{"source":"usecontext","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"usecontext","target":"自定义hook","value":1,"label":"related-to"},{"source":"usecontext","target":"高阶组件","value":1,"label":"related-to"},{"source":"usecontext","target":"c","value":1,"label":"applied-in"},{"source":"usecontext","target":"r","value":1,"label":"applied-in"},{"source":"usereducer","target":"usecallback","value":1,"label":"related-to"},{"source":"usereducer","target":"usememo","value":1,"label":"related-to"},{"source":"usereducer","target":"useref","value":1,"label":"related-to"},{"source":"usereducer","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"usereducer","target":"自定义hook","value":1,"label":"related-to"},{"source":"usereducer","target":"高阶组件","value":1,"label":"related-to"},{"source":"usereducer","target":"c","value":1,"label":"applied-in"},{"source":"usereducer","target":"r","value":1,"label":"applied-in"},{"source":"usecallback","target":"useref","value":1,"label":"related-to"},{"source":"usecallback","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"usecallback","target":"自定义hook","value":1,"label":"related-to"},{"source":"usecallback","target":"高阶组件","value":1,"label":"related-to"},{"source":"usememo","target":"useref","value":1,"label":"related-to"},{"source":"usememo","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"usememo","target":"自定义hook","value":1,"label":"related-to"},{"source":"usememo","target":"高阶组件","value":1,"label":"related-to"},{"source":"useref","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"useref","target":"自定义hook","value":1,"label":"related-to"},{"source":"useref","target":"高阶组件","value":1,"label":"related-to"},{"source":"useref","target":"c","value":1,"label":"applied-in"},{"source":"useref","target":"r","value":1,"label":"applied-in"},{"source":"uselayouteffect","target":"自定义hook","value":1,"label":"related-to"},{"source":"uselayouteffect","target":"高阶组件","value":1,"label":"related-to"},{"source":"uselayouteffect","target":"c","value":1,"label":"applied-in"},{"source":"uselayouteffect","target":"r","value":1,"label":"applied-in"},{"source":"自定义hook","target":"高阶组件","value":1,"label":"related-to"},{"source":"自定义hook","target":"c","value":1,"label":"applied-in"},{"source":"自定义hook","target":"r","value":1,"label":"applied-in"},{"source":"高阶组件","target":"c","value":4,"label":"applied-in"},{"source":"高阶组件","target":"r","value":4,"label":"applied-in"},{"source":"react","target":"xss","value":1,"label":"uses"},{"source":"react","target":"babel","value":1,"label":"built-with"},{"source":"jsx","target":"xss","value":1,"label":"related-to"},{"source":"jsx","target":"babel","value":1,"label":"used-by"},{"source":"xss","target":"javascript","value":1,"label":"applied-in"},{"source":"xss","target":"java","value":1,"label":"applied-in"},{"source":"xss","target":"html","value":1,"label":"applied-in"},{"source":"xss","target":"c","value":1,"label":"applied-in"},{"source":"xss","target":"r","value":1,"label":"applied-in"},{"source":"xss","target":"babel","value":1,"label":"used-by"},{"source":"xss","target":"ava","value":1,"label":"used-by"},{"source":"javascript","target":"babel","value":1,"label":"used-with"},{"source":"java","target":"babel","value":1,"label":"used-with"},{"source":"html","target":"babel","value":1,"label":"used-with"},{"source":"c","target":"babel","value":1,"label":"used-with"},{"source":"r","target":"babel","value":1,"label":"used-with"},{"source":"babel","target":"ava","value":1,"label":"integrates-with"},{"source":"react","target":"虚拟dom","value":2,"label":"uses"},{"source":"组件","target":"虚拟dom","value":2,"label":"related-to"},{"source":"虚拟dom","target":"jsx","value":2,"label":"related-to"},{"source":"虚拟dom","target":"javascript","value":2,"label":"applied-in"},{"source":"虚拟dom","target":"java","value":2,"label":"applied-in"},{"source":"虚拟dom","target":"c","value":2,"label":"applied-in"},{"source":"虚拟dom","target":"r","value":2,"label":"applied-in"},{"source":"虚拟dom","target":"ava","value":2,"label":"used-by"},{"source":"react","target":"react-native","value":2,"label":"related-to"},{"source":"react-native","target":"组件","value":2,"label":"uses"},{"source":"react-native","target":"状态管理","value":1,"label":"uses"},{"source":"react-native","target":"props","value":1,"label":"uses"},{"source":"react-native","target":"虚拟dom","value":1,"label":"uses"},{"source":"react-native","target":"jsx","value":1,"label":"uses"},{"source":"react-native","target":"javascript","value":1,"label":"written-in"},{"source":"react-native","target":"java","value":1,"label":"written-in"},{"source":"react-native","target":"html","value":1,"label":"written-in"},{"source":"react-native","target":"c","value":2,"label":"written-in"},{"source":"react-native","target":"r","value":2,"label":"written-in"},{"source":"react-native","target":"ava","value":1,"label":"built-with"},{"source":"状态管理","target":"虚拟dom","value":1,"label":"related-to"},{"source":"props","target":"虚拟dom","value":1,"label":"related-to"},{"source":"虚拟dom","target":"html","value":1,"label":"applied-in"},{"source":"redux","target":"高阶组件","value":1,"label":"related-to"},{"source":"react-native","target":"高阶组件","value":1,"label":"uses"},{"source":"ref","target":"javascript","value":2,"label":"applied-in"},{"source":"ref","target":"java","value":2,"label":"applied-in"},{"source":"ref","target":"html","value":1,"label":"applied-in"},{"source":"ref","target":"css","value":1,"label":"applied-in"},{"source":"ref","target":"npm","value":1,"label":"used-by"},{"source":"ref","target":"ava","value":2,"label":"used-by"},{"source":"jsx","target":"npm","value":1,"label":"used-by"},{"source":"javascript","target":"npm","value":2,"label":"used-with"},{"source":"java","target":"npm","value":2,"label":"used-with"},{"source":"html","target":"css","value":1,"label":"related-to"},{"source":"css","target":"npm","value":1,"label":"used-with"},{"source":"npm","target":"ava","value":2,"label":"integrates-with"},{"source":"javascript","target":"yarn","value":1,"label":"used-with"},{"source":"typescript","target":"json","value":1,"label":"related-to"},{"source":"typescript","target":"npm","value":1,"label":"used-with"},{"source":"typescript","target":"yarn","value":1,"label":"used-with"},{"source":"java","target":"yarn","value":1,"label":"used-with"},{"source":"c","target":"yarn","value":1,"label":"used-with"},{"source":"r","target":"yarn","value":1,"label":"used-with"},{"source":"json","target":"yarn","value":1,"label":"used-with"},{"source":"npm","target":"yarn","value":1,"label":"integrates-with"},{"source":"yarn","target":"ava","value":1,"label":"integrates-with"},{"source":"react","target":"vue","value":2,"label":"related-to"},{"source":"react","target":"proxy","value":2,"label":"uses"},{"source":"react","target":"defineproperty","value":1,"label":"uses"},{"source":"react","target":"chef","value":1,"label":"built-with"},{"source":"vue","target":"组件","value":3,"label":"uses"},{"source":"vue","target":"props","value":1,"label":"uses"},{"source":"vue","target":"ref","value":2,"label":"uses"},{"source":"vue","target":"proxy","value":3,"label":"uses"},{"source":"vue","target":"defineproperty","value":2,"label":"uses"},{"source":"vue","target":"typescript","value":2,"label":"written-in"},{"source":"vue","target":"c","value":3,"label":"written-in"},{"source":"vue","target":"r","value":3,"label":"written-in"},{"source":"vue","target":"chef","value":1,"label":"built-with"},{"source":"组件","target":"proxy","value":3,"label":"related-to"},{"source":"组件","target":"defineproperty","value":2,"label":"related-to"},{"source":"组件","target":"chef","value":1,"label":"used-by"},{"source":"props","target":"proxy","value":1,"label":"related-to"},{"source":"props","target":"defineproperty","value":1,"label":"related-to"},{"source":"props","target":"chef","value":1,"label":"used-by"},{"source":"ref","target":"proxy","value":2,"label":"related-to"},{"source":"ref","target":"defineproperty","value":1,"label":"related-to"},{"source":"ref","target":"typescript","value":2,"label":"applied-in"},{"source":"ref","target":"chef","value":1,"label":"used-by"},{"source":"proxy","target":"defineproperty","value":2,"label":"related-to"},{"source":"proxy","target":"typescript","value":2,"label":"applied-in"},{"source":"proxy","target":"c","value":3,"label":"applied-in"},{"source":"proxy","target":"r","value":3,"label":"applied-in"},{"source":"proxy","target":"chef","value":1,"label":"used-by"},{"source":"defineproperty","target":"typescript","value":1,"label":"applied-in"},{"source":"defineproperty","target":"c","value":2,"label":"applied-in"},{"source":"defineproperty","target":"r","value":2,"label":"applied-in"},{"source":"defineproperty","target":"chef","value":1,"label":"used-by"},{"source":"typescript","target":"chef","value":1,"label":"used-with"},{"source":"c","target":"chef","value":1,"label":"used-with"},{"source":"r","target":"chef","value":1,"label":"used-with"},{"source":"vue","target":"javascript","value":1,"label":"written-in"},{"source":"vue","target":"java","value":1,"label":"written-in"},{"source":"vue","target":"ava","value":1,"label":"built-with"},{"source":"proxy","target":"javascript","value":1,"label":"applied-in"},{"source":"proxy","target":"java","value":1,"label":"applied-in"},{"source":"proxy","target":"ava","value":1,"label":"used-by"}]},"fileList":["example.md","Flutter\\flutter.md","Java\\Java_基础.md","JavaScript\\JavaScript中的微任务与宏任务.md","JavaScript\\微任务、宏任务面试题.md","nextjs-guide.md","qiankun.md","React\\React-components.md","React\\React_19.md","React\\React_Fiber架构.md","React\\React_hook.md","React\\React_jsx.md","React\\React_虚拟DOM.md","React\\React面试题20260204.md","React\\Redux.md","React\\高阶组件（HOC）.md","ReactNative.md","tailwind-css.md","Typescript\\typescript.md","Vue3\\vue3.md","Vue3\\为什么 Proxy 比 defineProperty 好？。.md","Vue3\\为什么 ref 要用 .value？.md","WebSocket.md"],"fileGraphDataMap":{"example.md":{"nodes":[{"id":"react","label":"React","group":1,"size":4},{"id":"next.js","label":"Next.js","group":1,"size":2},{"id":"javascript","label":"JavaScript","group":3,"size":4},{"id":"java","label":"Java","group":3,"size":4},{"id":"python","label":"Python","group":3,"size":4},{"id":"c","label":"C","group":3,"size":12},{"id":"r","label":"R","group":3,"size":20},{"id":"markdown","label":"Markdown","group":3,"size":14},{"id":"git","label":"Git","group":4,"size":2},{"id":"ava","label":"AVA","group":4,"size":4}],"links":[{"source":"react","target":"next.js","value":1,"label":"related-to"},{"source":"react","target":"javascript","value":1,"label":"written-in"},{"source":"react","target":"java","value":1,"label":"written-in"},{"source":"react","target":"python","value":1,"label":"written-in"},{"source":"react","target":"c","value":1,"label":"written-in"},{"source":"react","target":"r","value":1,"label":"written-in"},{"source":"react","target":"markdown","value":1,"label":"written-in"},{"source":"react","target":"git","value":1,"label":"built-with"},{"source":"react","target":"ava","value":1,"label":"built-with"},{"source":"next.js","target":"javascript","value":1,"label":"written-in"},{"source":"next.js","target":"java","value":1,"label":"written-in"},{"source":"next.js","target":"python","value":1,"label":"written-in"},{"source":"next.js","target":"c","value":1,"label":"written-in"},{"source":"next.js","target":"r","value":1,"label":"written-in"},{"source":"next.js","target":"markdown","value":1,"label":"written-in"},{"source":"next.js","target":"git","value":1,"label":"built-with"},{"source":"next.js","target":"ava","value":1,"label":"built-with"},{"source":"javascript","target":"java","value":1,"label":"related-to"},{"source":"javascript","target":"python","value":1,"label":"related-to"},{"source":"javascript","target":"c","value":1,"label":"related-to"},{"source":"javascript","target":"r","value":1,"label":"related-to"},{"source":"javascript","target":"markdown","value":1,"label":"related-to"},{"source":"javascript","target":"git","value":1,"label":"used-with"},{"source":"javascript","target":"ava","value":1,"label":"used-with"},{"source":"java","target":"python","value":1,"label":"related-to"},{"source":"java","target":"c","value":1,"label":"related-to"},{"source":"java","target":"r","value":1,"label":"related-to"},{"source":"java","target":"markdown","value":1,"label":"related-to"},{"source":"java","target":"git","value":1,"label":"used-with"},{"source":"java","target":"ava","value":1,"label":"used-with"},{"source":"python","target":"c","value":1,"label":"related-to"},{"source":"python","target":"r","value":1,"label":"related-to"},{"source":"python","target":"markdown","value":1,"label":"related-to"},{"source":"python","target":"git","value":1,"label":"used-with"},{"source":"python","target":"ava","value":1,"label":"used-with"},{"source":"c","target":"r","value":1,"label":"related-to"},{"source":"c","target":"markdown","value":1,"label":"related-to"},{"source":"c","target":"git","value":1,"label":"used-with"},{"source":"c","target":"ava","value":1,"label":"used-with"},{"source":"r","target":"markdown","value":1,"label":"related-to"},{"source":"r","target":"git","value":1,"label":"used-with"},{"source":"r","target":"ava","value":1,"label":"used-with"},{"source":"markdown","target":"git","value":1,"label":"used-with"},{"source":"markdown","target":"ava","value":1,"label":"used-with"},{"source":"git","target":"ava","value":1,"label":"integrates-with"}]},"Flutter\\flutter.md":{"nodes":[{"id":"flutter","label":"Flutter","group":1,"size":20},{"id":"组件","label":"组件","group":2,"size":2},{"id":"go","label":"Go","group":3,"size":4},{"id":"dart","label":"Dart","group":3,"size":14},{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20},{"id":"git","label":"Git","group":4,"size":4}],"links":[{"source":"flutter","target":"组件","value":1,"label":"uses"},{"source":"flutter","target":"go","value":1,"label":"written-in"},{"source":"flutter","target":"dart","value":1,"label":"written-in"},{"source":"flutter","target":"c","value":1,"label":"written-in"},{"source":"flutter","target":"r","value":1,"label":"written-in"},{"source":"flutter","target":"git","value":1,"label":"built-with"},{"source":"组件","target":"go","value":1,"label":"applied-in"},{"source":"组件","target":"dart","value":1,"label":"applied-in"},{"source":"组件","target":"c","value":1,"label":"applied-in"},{"source":"组件","target":"r","value":1,"label":"applied-in"},{"source":"组件","target":"git","value":1,"label":"used-by"},{"source":"go","target":"dart","value":1,"label":"related-to"},{"source":"go","target":"c","value":1,"label":"related-to"},{"source":"go","target":"r","value":1,"label":"related-to"},{"source":"go","target":"git","value":1,"label":"used-with"},{"source":"dart","target":"c","value":1,"label":"related-to"},{"source":"dart","target":"r","value":1,"label":"related-to"},{"source":"dart","target":"git","value":1,"label":"used-with"},{"source":"c","target":"r","value":1,"label":"related-to"},{"source":"c","target":"git","value":1,"label":"used-with"},{"source":"r","target":"git","value":1,"label":"used-with"}]},"Java\\Java_基础.md":{"nodes":[{"id":"java","label":"Java","group":3,"size":20},{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20},{"id":"ava","label":"AVA","group":4,"size":20}],"links":[{"source":"java","target":"c","value":1,"label":"related-to"},{"source":"java","target":"r","value":1,"label":"related-to"},{"source":"java","target":"ava","value":1,"label":"used-with"},{"source":"c","target":"r","value":1,"label":"related-to"},{"source":"c","target":"ava","value":1,"label":"used-with"},{"source":"r","target":"ava","value":1,"label":"used-with"}]},"JavaScript\\JavaScript中的微任务与宏任务.md":{"nodes":[{"id":"javascript","label":"JavaScript","group":3,"size":4},{"id":"java","label":"Java","group":3,"size":4},{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20},{"id":"ava","label":"AVA","group":4,"size":4}],"links":[{"source":"javascript","target":"java","value":1,"label":"related-to"},{"source":"javascript","target":"c","value":1,"label":"related-to"},{"source":"javascript","target":"r","value":1,"label":"related-to"},{"source":"javascript","target":"ava","value":1,"label":"used-with"},{"source":"java","target":"c","value":1,"label":"related-to"},{"source":"java","target":"r","value":1,"label":"related-to"},{"source":"java","target":"ava","value":1,"label":"used-with"},{"source":"c","target":"r","value":1,"label":"related-to"},{"source":"c","target":"ava","value":1,"label":"used-with"},{"source":"r","target":"ava","value":1,"label":"used-with"}]},"JavaScript\\微任务、宏任务面试题.md":{"nodes":[{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20}],"links":[{"source":"c","target":"r","value":1,"label":"related-to"}]},"nextjs-guide.md":{"nodes":[{"id":"react","label":"React","group":1,"size":8},{"id":"next.js","label":"Next.js","group":1,"size":20},{"id":"组件","label":"组件","group":2,"size":8},{"id":"props","label":"Props","group":2,"size":4},{"id":"server-components","label":"Server Components","group":2,"size":2},{"id":"go","label":"Go","group":3,"size":2},{"id":"html","label":"HTML","group":3,"size":4},{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20},{"id":"json","label":"JSON","group":3,"size":4},{"id":"npm","label":"npm","group":4,"size":4}],"links":[{"source":"react","target":"next.js","value":1,"label":"related-to"},{"source":"react","target":"组件","value":1,"label":"uses"},{"source":"react","target":"props","value":1,"label":"uses"},{"source":"react","target":"server-components","value":1,"label":"uses"},{"source":"react","target":"go","value":1,"label":"written-in"},{"source":"react","target":"html","value":1,"label":"written-in"},{"source":"react","target":"c","value":1,"label":"written-in"},{"source":"react","target":"r","value":1,"label":"written-in"},{"source":"react","target":"json","value":1,"label":"written-in"},{"source":"react","target":"npm","value":1,"label":"built-with"},{"source":"next.js","target":"组件","value":1,"label":"uses"},{"source":"next.js","target":"props","value":1,"label":"uses"},{"source":"next.js","target":"server-components","value":1,"label":"uses"},{"source":"next.js","target":"go","value":1,"label":"written-in"},{"source":"next.js","target":"html","value":1,"label":"written-in"},{"source":"next.js","target":"c","value":1,"label":"written-in"},{"source":"next.js","target":"r","value":1,"label":"written-in"},{"source":"next.js","target":"json","value":1,"label":"written-in"},{"source":"next.js","target":"npm","value":1,"label":"built-with"},{"source":"组件","target":"props","value":1,"label":"related-to"},{"source":"组件","target":"server-components","value":1,"label":"related-to"},{"source":"组件","target":"go","value":1,"label":"applied-in"},{"source":"组件","target":"html","value":1,"label":"applied-in"},{"source":"组件","target":"c","value":1,"label":"applied-in"},{"source":"组件","target":"r","value":1,"label":"applied-in"},{"source":"组件","target":"json","value":1,"label":"applied-in"},{"source":"组件","target":"npm","value":1,"label":"used-by"},{"source":"props","target":"server-components","value":1,"label":"related-to"},{"source":"props","target":"go","value":1,"label":"applied-in"},{"source":"props","target":"html","value":1,"label":"applied-in"},{"source":"props","target":"c","value":1,"label":"applied-in"},{"source":"props","target":"r","value":1,"label":"applied-in"},{"source":"props","target":"json","value":1,"label":"applied-in"},{"source":"props","target":"npm","value":1,"label":"used-by"},{"source":"server-components","target":"go","value":1,"label":"applied-in"},{"source":"server-components","target":"html","value":1,"label":"applied-in"},{"source":"server-components","target":"c","value":1,"label":"applied-in"},{"source":"server-components","target":"r","value":1,"label":"applied-in"},{"source":"server-components","target":"json","value":1,"label":"applied-in"},{"source":"server-components","target":"npm","value":1,"label":"used-by"},{"source":"go","target":"html","value":1,"label":"related-to"},{"source":"go","target":"c","value":1,"label":"related-to"},{"source":"go","target":"r","value":1,"label":"related-to"},{"source":"go","target":"json","value":1,"label":"related-to"},{"source":"go","target":"npm","value":1,"label":"used-with"},{"source":"html","target":"c","value":1,"label":"related-to"},{"source":"html","target":"r","value":1,"label":"related-to"},{"source":"html","target":"json","value":1,"label":"related-to"},{"source":"html","target":"npm","value":1,"label":"used-with"},{"source":"c","target":"r","value":1,"label":"related-to"},{"source":"c","target":"json","value":1,"label":"related-to"},{"source":"c","target":"npm","value":1,"label":"used-with"},{"source":"r","target":"json","value":1,"label":"related-to"},{"source":"r","target":"npm","value":1,"label":"used-with"},{"source":"json","target":"npm","value":1,"label":"used-with"}]},"qiankun.md":{"nodes":[{"id":"qiankun","label":"qiankun","group":1,"size":20},{"id":"express","label":"Express","group":1,"size":2},{"id":"koa","label":"Koa","group":1,"size":2},{"id":"组件","label":"组件","group":2,"size":2},{"id":"cors","label":"CORS","group":2,"size":2},{"id":"html","label":"HTML","group":3,"size":4},{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20},{"id":"json","label":"JSON","group":3,"size":2},{"id":"graphql","label":"GraphQL","group":3,"size":2},{"id":"nx","label":"NX","group":4,"size":4}],"links":[{"source":"qiankun","target":"express","value":1,"label":"related-to"},{"source":"qiankun","target":"koa","value":1,"label":"related-to"},{"source":"qiankun","target":"组件","value":1,"label":"uses"},{"source":"qiankun","target":"cors","value":1,"label":"uses"},{"source":"qiankun","target":"html","value":1,"label":"written-in"},{"source":"qiankun","target":"c","value":1,"label":"written-in"},{"source":"qiankun","target":"r","value":1,"label":"written-in"},{"source":"qiankun","target":"json","value":1,"label":"written-in"},{"source":"qiankun","target":"graphql","value":1,"label":"written-in"},{"source":"qiankun","target":"nx","value":1,"label":"built-with"},{"source":"express","target":"koa","value":1,"label":"related-to"},{"source":"express","target":"组件","value":1,"label":"uses"},{"source":"express","target":"cors","value":1,"label":"uses"},{"source":"express","target":"html","value":1,"label":"written-in"},{"source":"express","target":"c","value":1,"label":"written-in"},{"source":"express","target":"r","value":1,"label":"written-in"},{"source":"express","target":"json","value":1,"label":"written-in"},{"source":"express","target":"graphql","value":1,"label":"written-in"},{"source":"express","target":"nx","value":1,"label":"built-with"},{"source":"koa","target":"组件","value":1,"label":"uses"},{"source":"koa","target":"cors","value":1,"label":"uses"},{"source":"koa","target":"html","value":1,"label":"written-in"},{"source":"koa","target":"c","value":1,"label":"written-in"},{"source":"koa","target":"r","value":1,"label":"written-in"},{"source":"koa","target":"json","value":1,"label":"written-in"},{"source":"koa","target":"graphql","value":1,"label":"written-in"},{"source":"koa","target":"nx","value":1,"label":"built-with"},{"source":"组件","target":"cors","value":1,"label":"related-to"},{"source":"组件","target":"html","value":1,"label":"applied-in"},{"source":"组件","target":"c","value":1,"label":"applied-in"},{"source":"组件","target":"r","value":1,"label":"applied-in"},{"source":"组件","target":"json","value":1,"label":"applied-in"},{"source":"组件","target":"graphql","value":1,"label":"applied-in"},{"source":"组件","target":"nx","value":1,"label":"used-by"},{"source":"cors","target":"html","value":1,"label":"applied-in"},{"source":"cors","target":"c","value":1,"label":"applied-in"},{"source":"cors","target":"r","value":1,"label":"applied-in"},{"source":"cors","target":"json","value":1,"label":"applied-in"},{"source":"cors","target":"graphql","value":1,"label":"applied-in"},{"source":"cors","target":"nx","value":1,"label":"used-by"},{"source":"html","target":"c","value":1,"label":"related-to"},{"source":"html","target":"r","value":1,"label":"related-to"},{"source":"html","target":"json","value":1,"label":"related-to"},{"source":"html","target":"graphql","value":1,"label":"related-to"},{"source":"html","target":"nx","value":1,"label":"used-with"},{"source":"c","target":"r","value":1,"label":"related-to"},{"source":"c","target":"json","value":1,"label":"related-to"},{"source":"c","target":"graphql","value":1,"label":"related-to"},{"source":"c","target":"nx","value":1,"label":"used-with"},{"source":"r","target":"json","value":1,"label":"related-to"},{"source":"r","target":"graphql","value":1,"label":"related-to"},{"source":"r","target":"nx","value":1,"label":"used-with"},{"source":"json","target":"graphql","value":1,"label":"related-to"},{"source":"json","target":"nx","value":1,"label":"used-with"},{"source":"graphql","target":"nx","value":1,"label":"used-with"}]},"React\\React-components.md":{"nodes":[{"id":"react","label":"React","group":1,"size":20},{"id":"组件","label":"组件","group":2,"size":20},{"id":"状态管理","label":"状态管理","group":2,"size":2},{"id":"props","label":"Props","group":2,"size":20},{"id":"hooks","label":"Hooks","group":2,"size":2},{"id":"jsx","label":"JSX","group":2,"size":20},{"id":"usestate","label":"useState","group":2,"size":12},{"id":"useeffect","label":"useEffect","group":2,"size":6},{"id":"usecallback","label":"useCallback","group":2,"size":6},{"id":"usememo","label":"useMemo","group":2,"size":6},{"id":"javascript","label":"JavaScript","group":3,"size":4},{"id":"typescript","label":"TypeScript","group":3,"size":4},{"id":"java","label":"Java","group":3,"size":4},{"id":"css","label":"CSS","group":3,"size":6},{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20},{"id":"jest","label":"Jest","group":4,"size":2},{"id":"testing-library","label":"Testing Library","group":4,"size":2},{"id":"ava","label":"AVA","group":4,"size":4}],"links":[{"source":"react","target":"组件","value":1,"label":"uses"},{"source":"react","target":"状态管理","value":1,"label":"uses"},{"source":"react","target":"props","value":1,"label":"uses"},{"source":"react","target":"hooks","value":1,"label":"uses"},{"source":"react","target":"jsx","value":1,"label":"uses"},{"source":"react","target":"usestate","value":1,"label":"uses"},{"source":"react","target":"useeffect","value":1,"label":"uses"},{"source":"react","target":"usecallback","value":1,"label":"uses"},{"source":"react","target":"usememo","value":1,"label":"uses"},{"source":"react","target":"javascript","value":1,"label":"written-in"},{"source":"react","target":"typescript","value":1,"label":"written-in"},{"source":"react","target":"java","value":1,"label":"written-in"},{"source":"react","target":"css","value":1,"label":"written-in"},{"source":"react","target":"c","value":1,"label":"written-in"},{"source":"react","target":"r","value":1,"label":"written-in"},{"source":"react","target":"jest","value":1,"label":"built-with"},{"source":"react","target":"testing-library","value":1,"label":"built-with"},{"source":"react","target":"ava","value":1,"label":"built-with"},{"source":"组件","target":"状态管理","value":1,"label":"related-to"},{"source":"组件","target":"props","value":1,"label":"related-to"},{"source":"组件","target":"hooks","value":1,"label":"related-to"},{"source":"组件","target":"jsx","value":1,"label":"related-to"},{"source":"组件","target":"usestate","value":1,"label":"related-to"},{"source":"组件","target":"useeffect","value":1,"label":"related-to"},{"source":"组件","target":"usecallback","value":1,"label":"related-to"},{"source":"组件","target":"usememo","value":1,"label":"related-to"},{"source":"组件","target":"javascript","value":1,"label":"applied-in"},{"source":"组件","target":"typescript","value":1,"label":"applied-in"},{"source":"组件","target":"java","value":1,"label":"applied-in"},{"source":"组件","target":"css","value":1,"label":"applied-in"},{"source":"组件","target":"c","value":1,"label":"applied-in"},{"source":"组件","target":"r","value":1,"label":"applied-in"},{"source":"组件","target":"jest","value":1,"label":"used-by"},{"source":"组件","target":"testing-library","value":1,"label":"used-by"},{"source":"组件","target":"ava","value":1,"label":"used-by"},{"source":"状态管理","target":"props","value":1,"label":"related-to"},{"source":"状态管理","target":"hooks","value":1,"label":"related-to"},{"source":"状态管理","target":"jsx","value":1,"label":"related-to"},{"source":"状态管理","target":"usestate","value":1,"label":"related-to"},{"source":"状态管理","target":"useeffect","value":1,"label":"related-to"},{"source":"状态管理","target":"usecallback","value":1,"label":"related-to"},{"source":"状态管理","target":"usememo","value":1,"label":"related-to"},{"source":"状态管理","target":"javascript","value":1,"label":"applied-in"},{"source":"状态管理","target":"typescript","value":1,"label":"applied-in"},{"source":"状态管理","target":"java","value":1,"label":"applied-in"},{"source":"状态管理","target":"css","value":1,"label":"applied-in"},{"source":"状态管理","target":"c","value":1,"label":"applied-in"},{"source":"状态管理","target":"r","value":1,"label":"applied-in"},{"source":"状态管理","target":"jest","value":1,"label":"used-by"},{"source":"状态管理","target":"testing-library","value":1,"label":"used-by"},{"source":"状态管理","target":"ava","value":1,"label":"used-by"},{"source":"props","target":"hooks","value":1,"label":"related-to"},{"source":"props","target":"jsx","value":1,"label":"related-to"},{"source":"props","target":"usestate","value":1,"label":"related-to"},{"source":"props","target":"useeffect","value":1,"label":"related-to"},{"source":"props","target":"usecallback","value":1,"label":"related-to"},{"source":"props","target":"usememo","value":1,"label":"related-to"},{"source":"props","target":"javascript","value":1,"label":"applied-in"},{"source":"props","target":"typescript","value":1,"label":"applied-in"},{"source":"props","target":"java","value":1,"label":"applied-in"},{"source":"props","target":"css","value":1,"label":"applied-in"},{"source":"props","target":"c","value":1,"label":"applied-in"},{"source":"props","target":"r","value":1,"label":"applied-in"},{"source":"props","target":"jest","value":1,"label":"used-by"},{"source":"props","target":"testing-library","value":1,"label":"used-by"},{"source":"props","target":"ava","value":1,"label":"used-by"},{"source":"hooks","target":"jsx","value":1,"label":"related-to"},{"source":"hooks","target":"usestate","value":1,"label":"related-to"},{"source":"hooks","target":"useeffect","value":1,"label":"related-to"},{"source":"hooks","target":"usecallback","value":1,"label":"related-to"},{"source":"hooks","target":"usememo","value":1,"label":"related-to"},{"source":"hooks","target":"javascript","value":1,"label":"applied-in"},{"source":"hooks","target":"typescript","value":1,"label":"applied-in"},{"source":"hooks","target":"java","value":1,"label":"applied-in"},{"source":"hooks","target":"css","value":1,"label":"applied-in"},{"source":"hooks","target":"c","value":1,"label":"applied-in"},{"source":"hooks","target":"r","value":1,"label":"applied-in"},{"source":"hooks","target":"jest","value":1,"label":"used-by"},{"source":"hooks","target":"testing-library","value":1,"label":"used-by"},{"source":"hooks","target":"ava","value":1,"label":"used-by"},{"source":"jsx","target":"usestate","value":1,"label":"related-to"},{"source":"jsx","target":"useeffect","value":1,"label":"related-to"},{"source":"jsx","target":"usecallback","value":1,"label":"related-to"},{"source":"jsx","target":"usememo","value":1,"label":"related-to"},{"source":"jsx","target":"javascript","value":1,"label":"applied-in"},{"source":"jsx","target":"typescript","value":1,"label":"applied-in"},{"source":"jsx","target":"java","value":1,"label":"applied-in"},{"source":"jsx","target":"css","value":1,"label":"applied-in"},{"source":"jsx","target":"c","value":1,"label":"applied-in"},{"source":"jsx","target":"r","value":1,"label":"applied-in"},{"source":"jsx","target":"jest","value":1,"label":"used-by"},{"source":"jsx","target":"testing-library","value":1,"label":"used-by"},{"source":"jsx","target":"ava","value":1,"label":"used-by"},{"source":"usestate","target":"useeffect","value":1,"label":"related-to"},{"source":"usestate","target":"usecallback","value":1,"label":"related-to"},{"source":"usestate","target":"usememo","value":1,"label":"related-to"},{"source":"usestate","target":"javascript","value":1,"label":"applied-in"},{"source":"usestate","target":"typescript","value":1,"label":"applied-in"},{"source":"usestate","target":"java","value":1,"label":"applied-in"},{"source":"usestate","target":"css","value":1,"label":"applied-in"},{"source":"usestate","target":"c","value":1,"label":"applied-in"},{"source":"usestate","target":"r","value":1,"label":"applied-in"},{"source":"usestate","target":"jest","value":1,"label":"used-by"},{"source":"usestate","target":"testing-library","value":1,"label":"used-by"},{"source":"usestate","target":"ava","value":1,"label":"used-by"},{"source":"useeffect","target":"usecallback","value":1,"label":"related-to"},{"source":"useeffect","target":"usememo","value":1,"label":"related-to"},{"source":"useeffect","target":"javascript","value":1,"label":"applied-in"},{"source":"useeffect","target":"typescript","value":1,"label":"applied-in"},{"source":"useeffect","target":"java","value":1,"label":"applied-in"},{"source":"useeffect","target":"css","value":1,"label":"applied-in"},{"source":"useeffect","target":"c","value":1,"label":"applied-in"},{"source":"useeffect","target":"r","value":1,"label":"applied-in"},{"source":"useeffect","target":"jest","value":1,"label":"used-by"},{"source":"useeffect","target":"testing-library","value":1,"label":"used-by"},{"source":"useeffect","target":"ava","value":1,"label":"used-by"},{"source":"usecallback","target":"usememo","value":1,"label":"related-to"},{"source":"usecallback","target":"javascript","value":1,"label":"applied-in"},{"source":"usecallback","target":"typescript","value":1,"label":"applied-in"},{"source":"usecallback","target":"java","value":1,"label":"applied-in"},{"source":"usecallback","target":"css","value":1,"label":"applied-in"},{"source":"usecallback","target":"c","value":1,"label":"applied-in"},{"source":"usecallback","target":"r","value":1,"label":"applied-in"},{"source":"usecallback","target":"jest","value":1,"label":"used-by"},{"source":"usecallback","target":"testing-library","value":1,"label":"used-by"},{"source":"usecallback","target":"ava","value":1,"label":"used-by"},{"source":"usememo","target":"javascript","value":1,"label":"applied-in"},{"source":"usememo","target":"typescript","value":1,"label":"applied-in"},{"source":"usememo","target":"java","value":1,"label":"applied-in"},{"source":"usememo","target":"css","value":1,"label":"applied-in"},{"source":"usememo","target":"c","value":1,"label":"applied-in"},{"source":"usememo","target":"r","value":1,"label":"applied-in"},{"source":"usememo","target":"jest","value":1,"label":"used-by"},{"source":"usememo","target":"testing-library","value":1,"label":"used-by"},{"source":"usememo","target":"ava","value":1,"label":"used-by"},{"source":"javascript","target":"typescript","value":1,"label":"related-to"},{"source":"javascript","target":"java","value":1,"label":"related-to"},{"source":"javascript","target":"css","value":1,"label":"related-to"},{"source":"javascript","target":"c","value":1,"label":"related-to"},{"source":"javascript","target":"r","value":1,"label":"related-to"},{"source":"javascript","target":"jest","value":1,"label":"used-with"},{"source":"javascript","target":"testing-library","value":1,"label":"used-with"},{"source":"javascript","target":"ava","value":1,"label":"used-with"},{"source":"typescript","target":"java","value":1,"label":"related-to"},{"source":"typescript","target":"css","value":1,"label":"related-to"},{"source":"typescript","target":"c","value":1,"label":"related-to"},{"source":"typescript","target":"r","value":1,"label":"related-to"},{"source":"typescript","target":"jest","value":1,"label":"used-with"},{"source":"typescript","target":"testing-library","value":1,"label":"used-with"},{"source":"typescript","target":"ava","value":1,"label":"used-with"},{"source":"java","target":"css","value":1,"label":"related-to"},{"source":"java","target":"c","value":1,"label":"related-to"},{"source":"java","target":"r","value":1,"label":"related-to"},{"source":"java","target":"jest","value":1,"label":"used-with"},{"source":"java","target":"testing-library","value":1,"label":"used-with"},{"source":"java","target":"ava","value":1,"label":"used-with"},{"source":"css","target":"c","value":1,"label":"related-to"},{"source":"css","target":"r","value":1,"label":"related-to"},{"source":"css","target":"jest","value":1,"label":"used-with"},{"source":"css","target":"testing-library","value":1,"label":"used-with"},{"source":"css","target":"ava","value":1,"label":"used-with"},{"source":"c","target":"r","value":1,"label":"related-to"},{"source":"c","target":"jest","value":1,"label":"used-with"},{"source":"c","target":"testing-library","value":1,"label":"used-with"},{"source":"c","target":"ava","value":1,"label":"used-with"},{"source":"r","target":"jest","value":1,"label":"used-with"},{"source":"r","target":"testing-library","value":1,"label":"used-with"},{"source":"r","target":"ava","value":1,"label":"used-with"},{"source":"jest","target":"testing-library","value":1,"label":"integrates-with"},{"source":"jest","target":"ava","value":1,"label":"integrates-with"},{"source":"testing-library","target":"ava","value":1,"label":"integrates-with"}]},"React\\React_19.md":{"nodes":[{"id":"react","label":"React","group":1,"size":8},{"id":"组件","label":"组件","group":2,"size":14},{"id":"状态管理","label":"状态管理","group":2,"size":2},{"id":"hooks","label":"Hooks","group":2,"size":4},{"id":"jsx","label":"JSX","group":2,"size":4},{"id":"redux","label":"Redux","group":2,"size":2},{"id":"suspense","label":"Suspense","group":2,"size":6},{"id":"server-components","label":"Server Components","group":2,"size":2},{"id":"javascript","label":"JavaScript","group":3,"size":2},{"id":"java","label":"Java","group":3,"size":2},{"id":"html","label":"HTML","group":3,"size":2},{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20},{"id":"json","label":"JSON","group":3,"size":2},{"id":"ava","label":"AVA","group":4,"size":2}],"links":[{"source":"react","target":"组件","value":1,"label":"uses"},{"source":"react","target":"状态管理","value":1,"label":"uses"},{"source":"react","target":"hooks","value":1,"label":"uses"},{"source":"react","target":"jsx","value":1,"label":"uses"},{"source":"react","target":"redux","value":1,"label":"uses"},{"source":"react","target":"suspense","value":1,"label":"uses"},{"source":"react","target":"server-components","value":1,"label":"uses"},{"source":"react","target":"javascript","value":1,"label":"written-in"},{"source":"react","target":"java","value":1,"label":"written-in"},{"source":"react","target":"html","value":1,"label":"written-in"},{"source":"react","target":"c","value":1,"label":"written-in"},{"source":"react","target":"r","value":1,"label":"written-in"},{"source":"react","target":"json","value":1,"label":"written-in"},{"source":"react","target":"ava","value":1,"label":"built-with"},{"source":"组件","target":"状态管理","value":1,"label":"related-to"},{"source":"组件","target":"hooks","value":1,"label":"related-to"},{"source":"组件","target":"jsx","value":1,"label":"related-to"},{"source":"组件","target":"redux","value":1,"label":"related-to"},{"source":"组件","target":"suspense","value":1,"label":"related-to"},{"source":"组件","target":"server-components","value":1,"label":"related-to"},{"source":"组件","target":"javascript","value":1,"label":"applied-in"},{"source":"组件","target":"java","value":1,"label":"applied-in"},{"source":"组件","target":"html","value":1,"label":"applied-in"},{"source":"组件","target":"c","value":1,"label":"applied-in"},{"source":"组件","target":"r","value":1,"label":"applied-in"},{"source":"组件","target":"json","value":1,"label":"applied-in"},{"source":"组件","target":"ava","value":1,"label":"used-by"},{"source":"状态管理","target":"hooks","value":1,"label":"related-to"},{"source":"状态管理","target":"jsx","value":1,"label":"related-to"},{"source":"状态管理","target":"redux","value":1,"label":"related-to"},{"source":"状态管理","target":"suspense","value":1,"label":"related-to"},{"source":"状态管理","target":"server-components","value":1,"label":"related-to"},{"source":"状态管理","target":"javascript","value":1,"label":"applied-in"},{"source":"状态管理","target":"java","value":1,"label":"applied-in"},{"source":"状态管理","target":"html","value":1,"label":"applied-in"},{"source":"状态管理","target":"c","value":1,"label":"applied-in"},{"source":"状态管理","target":"r","value":1,"label":"applied-in"},{"source":"状态管理","target":"json","value":1,"label":"applied-in"},{"source":"状态管理","target":"ava","value":1,"label":"used-by"},{"source":"hooks","target":"jsx","value":1,"label":"related-to"},{"source":"hooks","target":"redux","value":1,"label":"related-to"},{"source":"hooks","target":"suspense","value":1,"label":"related-to"},{"source":"hooks","target":"server-components","value":1,"label":"related-to"},{"source":"hooks","target":"javascript","value":1,"label":"applied-in"},{"source":"hooks","target":"java","value":1,"label":"applied-in"},{"source":"hooks","target":"html","value":1,"label":"applied-in"},{"source":"hooks","target":"c","value":1,"label":"applied-in"},{"source":"hooks","target":"r","value":1,"label":"applied-in"},{"source":"hooks","target":"json","value":1,"label":"applied-in"},{"source":"hooks","target":"ava","value":1,"label":"used-by"},{"source":"jsx","target":"redux","value":1,"label":"related-to"},{"source":"jsx","target":"suspense","value":1,"label":"related-to"},{"source":"jsx","target":"server-components","value":1,"label":"related-to"},{"source":"jsx","target":"javascript","value":1,"label":"applied-in"},{"source":"jsx","target":"java","value":1,"label":"applied-in"},{"source":"jsx","target":"html","value":1,"label":"applied-in"},{"source":"jsx","target":"c","value":1,"label":"applied-in"},{"source":"jsx","target":"r","value":1,"label":"applied-in"},{"source":"jsx","target":"json","value":1,"label":"applied-in"},{"source":"jsx","target":"ava","value":1,"label":"used-by"},{"source":"redux","target":"suspense","value":1,"label":"related-to"},{"source":"redux","target":"server-components","value":1,"label":"related-to"},{"source":"redux","target":"javascript","value":1,"label":"applied-in"},{"source":"redux","target":"java","value":1,"label":"applied-in"},{"source":"redux","target":"html","value":1,"label":"applied-in"},{"source":"redux","target":"c","value":1,"label":"applied-in"},{"source":"redux","target":"r","value":1,"label":"applied-in"},{"source":"redux","target":"json","value":1,"label":"applied-in"},{"source":"redux","target":"ava","value":1,"label":"used-by"},{"source":"suspense","target":"server-components","value":1,"label":"related-to"},{"source":"suspense","target":"javascript","value":1,"label":"applied-in"},{"source":"suspense","target":"java","value":1,"label":"applied-in"},{"source":"suspense","target":"html","value":1,"label":"applied-in"},{"source":"suspense","target":"c","value":1,"label":"applied-in"},{"source":"suspense","target":"r","value":1,"label":"applied-in"},{"source":"suspense","target":"json","value":1,"label":"applied-in"},{"source":"suspense","target":"ava","value":1,"label":"used-by"},{"source":"server-components","target":"javascript","value":1,"label":"applied-in"},{"source":"server-components","target":"java","value":1,"label":"applied-in"},{"source":"server-components","target":"html","value":1,"label":"applied-in"},{"source":"server-components","target":"c","value":1,"label":"applied-in"},{"source":"server-components","target":"r","value":1,"label":"applied-in"},{"source":"server-components","target":"json","value":1,"label":"applied-in"},{"source":"server-components","target":"ava","value":1,"label":"used-by"},{"source":"javascript","target":"java","value":1,"label":"related-to"},{"source":"javascript","target":"html","value":1,"label":"related-to"},{"source":"javascript","target":"c","value":1,"label":"related-to"},{"source":"javascript","target":"r","value":1,"label":"related-to"},{"source":"javascript","target":"json","value":1,"label":"related-to"},{"source":"javascript","target":"ava","value":1,"label":"used-with"},{"source":"java","target":"html","value":1,"label":"related-to"},{"source":"java","target":"c","value":1,"label":"related-to"},{"source":"java","target":"r","value":1,"label":"related-to"},{"source":"java","target":"json","value":1,"label":"related-to"},{"source":"java","target":"ava","value":1,"label":"used-with"},{"source":"html","target":"c","value":1,"label":"related-to"},{"source":"html","target":"r","value":1,"label":"related-to"},{"source":"html","target":"json","value":1,"label":"related-to"},{"source":"html","target":"ava","value":1,"label":"used-with"},{"source":"c","target":"r","value":1,"label":"related-to"},{"source":"c","target":"json","value":1,"label":"related-to"},{"source":"c","target":"ava","value":1,"label":"used-with"},{"source":"r","target":"json","value":1,"label":"related-to"},{"source":"r","target":"ava","value":1,"label":"used-with"},{"source":"json","target":"ava","value":1,"label":"used-with"}]},"React\\React_Fiber架构.md":{"nodes":[{"id":"react","label":"React","group":1,"size":12},{"id":"fiber","label":"Fiber","group":2,"size":10},{"id":"c","label":"C","group":3,"size":14},{"id":"r","label":"R","group":3,"size":20}],"links":[{"source":"react","target":"fiber","value":1,"label":"uses"},{"source":"react","target":"c","value":1,"label":"written-in"},{"source":"react","target":"r","value":1,"label":"written-in"},{"source":"fiber","target":"c","value":1,"label":"applied-in"},{"source":"fiber","target":"r","value":1,"label":"applied-in"},{"source":"c","target":"r","value":1,"label":"related-to"}]},"React\\React_hook.md":{"nodes":[{"id":"react","label":"React","group":1,"size":16},{"id":"组件","label":"组件","group":2,"size":16},{"id":"props","label":"Props","group":2,"size":8},{"id":"hooks","label":"Hooks","group":2,"size":8},{"id":"ref","label":"Ref","group":2,"size":10},{"id":"jsx","label":"JSX","group":2,"size":20},{"id":"usestate","label":"useState","group":2,"size":8},{"id":"useeffect","label":"useEffect","group":2,"size":14},{"id":"usecontext","label":"useContext","group":2,"size":6},{"id":"usereducer","label":"useReducer","group":2,"size":6},{"id":"usecallback","label":"useCallback","group":2,"size":8},{"id":"usememo","label":"useMemo","group":2,"size":12},{"id":"useref","label":"useRef","group":2,"size":4},{"id":"uselayouteffect","label":"useLayoutEffect","group":2,"size":14},{"id":"自定义hook","label":"自定义Hook","group":2,"size":8},{"id":"高阶组件","label":"高阶组件","group":2,"size":2},{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20}],"links":[{"source":"react","target":"组件","value":1,"label":"uses"},{"source":"react","target":"props","value":1,"label":"uses"},{"source":"react","target":"hooks","value":1,"label":"uses"},{"source":"react","target":"ref","value":1,"label":"uses"},{"source":"react","target":"jsx","value":1,"label":"uses"},{"source":"react","target":"usestate","value":1,"label":"uses"},{"source":"react","target":"useeffect","value":1,"label":"uses"},{"source":"react","target":"usecontext","value":1,"label":"uses"},{"source":"react","target":"usereducer","value":1,"label":"uses"},{"source":"react","target":"usecallback","value":1,"label":"uses"},{"source":"react","target":"usememo","value":1,"label":"uses"},{"source":"react","target":"useref","value":1,"label":"uses"},{"source":"react","target":"uselayouteffect","value":1,"label":"uses"},{"source":"react","target":"自定义hook","value":1,"label":"uses"},{"source":"react","target":"高阶组件","value":1,"label":"uses"},{"source":"react","target":"c","value":1,"label":"written-in"},{"source":"react","target":"r","value":1,"label":"written-in"},{"source":"组件","target":"props","value":1,"label":"related-to"},{"source":"组件","target":"hooks","value":1,"label":"related-to"},{"source":"组件","target":"ref","value":1,"label":"related-to"},{"source":"组件","target":"jsx","value":1,"label":"related-to"},{"source":"组件","target":"usestate","value":1,"label":"related-to"},{"source":"组件","target":"useeffect","value":1,"label":"related-to"},{"source":"组件","target":"usecontext","value":1,"label":"related-to"},{"source":"组件","target":"usereducer","value":1,"label":"related-to"},{"source":"组件","target":"usecallback","value":1,"label":"related-to"},{"source":"组件","target":"usememo","value":1,"label":"related-to"},{"source":"组件","target":"useref","value":1,"label":"related-to"},{"source":"组件","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"组件","target":"自定义hook","value":1,"label":"related-to"},{"source":"组件","target":"高阶组件","value":1,"label":"related-to"},{"source":"组件","target":"c","value":1,"label":"applied-in"},{"source":"组件","target":"r","value":1,"label":"applied-in"},{"source":"props","target":"hooks","value":1,"label":"related-to"},{"source":"props","target":"ref","value":1,"label":"related-to"},{"source":"props","target":"jsx","value":1,"label":"related-to"},{"source":"props","target":"usestate","value":1,"label":"related-to"},{"source":"props","target":"useeffect","value":1,"label":"related-to"},{"source":"props","target":"usecontext","value":1,"label":"related-to"},{"source":"props","target":"usereducer","value":1,"label":"related-to"},{"source":"props","target":"usecallback","value":1,"label":"related-to"},{"source":"props","target":"usememo","value":1,"label":"related-to"},{"source":"props","target":"useref","value":1,"label":"related-to"},{"source":"props","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"props","target":"自定义hook","value":1,"label":"related-to"},{"source":"props","target":"高阶组件","value":1,"label":"related-to"},{"source":"props","target":"c","value":1,"label":"applied-in"},{"source":"props","target":"r","value":1,"label":"applied-in"},{"source":"hooks","target":"ref","value":1,"label":"related-to"},{"source":"hooks","target":"jsx","value":1,"label":"related-to"},{"source":"hooks","target":"usestate","value":1,"label":"related-to"},{"source":"hooks","target":"useeffect","value":1,"label":"related-to"},{"source":"hooks","target":"usecontext","value":1,"label":"related-to"},{"source":"hooks","target":"usereducer","value":1,"label":"related-to"},{"source":"hooks","target":"usecallback","value":1,"label":"related-to"},{"source":"hooks","target":"usememo","value":1,"label":"related-to"},{"source":"hooks","target":"useref","value":1,"label":"related-to"},{"source":"hooks","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"hooks","target":"自定义hook","value":1,"label":"related-to"},{"source":"hooks","target":"高阶组件","value":1,"label":"related-to"},{"source":"hooks","target":"c","value":1,"label":"applied-in"},{"source":"hooks","target":"r","value":1,"label":"applied-in"},{"source":"ref","target":"jsx","value":1,"label":"related-to"},{"source":"ref","target":"usestate","value":1,"label":"related-to"},{"source":"ref","target":"useeffect","value":1,"label":"related-to"},{"source":"ref","target":"usecontext","value":1,"label":"related-to"},{"source":"ref","target":"usereducer","value":1,"label":"related-to"},{"source":"ref","target":"usecallback","value":1,"label":"related-to"},{"source":"ref","target":"usememo","value":1,"label":"related-to"},{"source":"ref","target":"useref","value":1,"label":"related-to"},{"source":"ref","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"ref","target":"自定义hook","value":1,"label":"related-to"},{"source":"ref","target":"高阶组件","value":1,"label":"related-to"},{"source":"ref","target":"c","value":1,"label":"applied-in"},{"source":"ref","target":"r","value":1,"label":"applied-in"},{"source":"jsx","target":"usestate","value":1,"label":"related-to"},{"source":"jsx","target":"useeffect","value":1,"label":"related-to"},{"source":"jsx","target":"usecontext","value":1,"label":"related-to"},{"source":"jsx","target":"usereducer","value":1,"label":"related-to"},{"source":"jsx","target":"usecallback","value":1,"label":"related-to"},{"source":"jsx","target":"usememo","value":1,"label":"related-to"},{"source":"jsx","target":"useref","value":1,"label":"related-to"},{"source":"jsx","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"jsx","target":"自定义hook","value":1,"label":"related-to"},{"source":"jsx","target":"高阶组件","value":1,"label":"related-to"},{"source":"jsx","target":"c","value":1,"label":"applied-in"},{"source":"jsx","target":"r","value":1,"label":"applied-in"},{"source":"usestate","target":"useeffect","value":1,"label":"related-to"},{"source":"usestate","target":"usecontext","value":1,"label":"related-to"},{"source":"usestate","target":"usereducer","value":1,"label":"related-to"},{"source":"usestate","target":"usecallback","value":1,"label":"related-to"},{"source":"usestate","target":"usememo","value":1,"label":"related-to"},{"source":"usestate","target":"useref","value":1,"label":"related-to"},{"source":"usestate","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"usestate","target":"自定义hook","value":1,"label":"related-to"},{"source":"usestate","target":"高阶组件","value":1,"label":"related-to"},{"source":"usestate","target":"c","value":1,"label":"applied-in"},{"source":"usestate","target":"r","value":1,"label":"applied-in"},{"source":"useeffect","target":"usecontext","value":1,"label":"related-to"},{"source":"useeffect","target":"usereducer","value":1,"label":"related-to"},{"source":"useeffect","target":"usecallback","value":1,"label":"related-to"},{"source":"useeffect","target":"usememo","value":1,"label":"related-to"},{"source":"useeffect","target":"useref","value":1,"label":"related-to"},{"source":"useeffect","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"useeffect","target":"自定义hook","value":1,"label":"related-to"},{"source":"useeffect","target":"高阶组件","value":1,"label":"related-to"},{"source":"useeffect","target":"c","value":1,"label":"applied-in"},{"source":"useeffect","target":"r","value":1,"label":"applied-in"},{"source":"usecontext","target":"usereducer","value":1,"label":"related-to"},{"source":"usecontext","target":"usecallback","value":1,"label":"related-to"},{"source":"usecontext","target":"usememo","value":1,"label":"related-to"},{"source":"usecontext","target":"useref","value":1,"label":"related-to"},{"source":"usecontext","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"usecontext","target":"自定义hook","value":1,"label":"related-to"},{"source":"usecontext","target":"高阶组件","value":1,"label":"related-to"},{"source":"usecontext","target":"c","value":1,"label":"applied-in"},{"source":"usecontext","target":"r","value":1,"label":"applied-in"},{"source":"usereducer","target":"usecallback","value":1,"label":"related-to"},{"source":"usereducer","target":"usememo","value":1,"label":"related-to"},{"source":"usereducer","target":"useref","value":1,"label":"related-to"},{"source":"usereducer","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"usereducer","target":"自定义hook","value":1,"label":"related-to"},{"source":"usereducer","target":"高阶组件","value":1,"label":"related-to"},{"source":"usereducer","target":"c","value":1,"label":"applied-in"},{"source":"usereducer","target":"r","value":1,"label":"applied-in"},{"source":"usecallback","target":"usememo","value":1,"label":"related-to"},{"source":"usecallback","target":"useref","value":1,"label":"related-to"},{"source":"usecallback","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"usecallback","target":"自定义hook","value":1,"label":"related-to"},{"source":"usecallback","target":"高阶组件","value":1,"label":"related-to"},{"source":"usecallback","target":"c","value":1,"label":"applied-in"},{"source":"usecallback","target":"r","value":1,"label":"applied-in"},{"source":"usememo","target":"useref","value":1,"label":"related-to"},{"source":"usememo","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"usememo","target":"自定义hook","value":1,"label":"related-to"},{"source":"usememo","target":"高阶组件","value":1,"label":"related-to"},{"source":"usememo","target":"c","value":1,"label":"applied-in"},{"source":"usememo","target":"r","value":1,"label":"applied-in"},{"source":"useref","target":"uselayouteffect","value":1,"label":"related-to"},{"source":"useref","target":"自定义hook","value":1,"label":"related-to"},{"source":"useref","target":"高阶组件","value":1,"label":"related-to"},{"source":"useref","target":"c","value":1,"label":"applied-in"},{"source":"useref","target":"r","value":1,"label":"applied-in"},{"source":"uselayouteffect","target":"自定义hook","value":1,"label":"related-to"},{"source":"uselayouteffect","target":"高阶组件","value":1,"label":"related-to"},{"source":"uselayouteffect","target":"c","value":1,"label":"applied-in"},{"source":"uselayouteffect","target":"r","value":1,"label":"applied-in"},{"source":"自定义hook","target":"高阶组件","value":1,"label":"related-to"},{"source":"自定义hook","target":"c","value":1,"label":"applied-in"},{"source":"自定义hook","target":"r","value":1,"label":"applied-in"},{"source":"高阶组件","target":"c","value":1,"label":"applied-in"},{"source":"高阶组件","target":"r","value":1,"label":"applied-in"},{"source":"c","target":"r","value":1,"label":"related-to"}]},"React\\React_jsx.md":{"nodes":[{"id":"react","label":"React","group":1,"size":10},{"id":"jsx","label":"JSX","group":2,"size":20},{"id":"xss","label":"XSS","group":2,"size":2},{"id":"javascript","label":"JavaScript","group":3,"size":4},{"id":"java","label":"Java","group":3,"size":4},{"id":"html","label":"HTML","group":3,"size":2},{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20},{"id":"babel","label":"Babel","group":4,"size":4},{"id":"ava","label":"AVA","group":4,"size":4}],"links":[{"source":"react","target":"jsx","value":1,"label":"uses"},{"source":"react","target":"xss","value":1,"label":"uses"},{"source":"react","target":"javascript","value":1,"label":"written-in"},{"source":"react","target":"java","value":1,"label":"written-in"},{"source":"react","target":"html","value":1,"label":"written-in"},{"source":"react","target":"c","value":1,"label":"written-in"},{"source":"react","target":"r","value":1,"label":"written-in"},{"source":"react","target":"babel","value":1,"label":"built-with"},{"source":"react","target":"ava","value":1,"label":"built-with"},{"source":"jsx","target":"xss","value":1,"label":"related-to"},{"source":"jsx","target":"javascript","value":1,"label":"applied-in"},{"source":"jsx","target":"java","value":1,"label":"applied-in"},{"source":"jsx","target":"html","value":1,"label":"applied-in"},{"source":"jsx","target":"c","value":1,"label":"applied-in"},{"source":"jsx","target":"r","value":1,"label":"applied-in"},{"source":"jsx","target":"babel","value":1,"label":"used-by"},{"source":"jsx","target":"ava","value":1,"label":"used-by"},{"source":"xss","target":"javascript","value":1,"label":"applied-in"},{"source":"xss","target":"java","value":1,"label":"applied-in"},{"source":"xss","target":"html","value":1,"label":"applied-in"},{"source":"xss","target":"c","value":1,"label":"applied-in"},{"source":"xss","target":"r","value":1,"label":"applied-in"},{"source":"xss","target":"babel","value":1,"label":"used-by"},{"source":"xss","target":"ava","value":1,"label":"used-by"},{"source":"javascript","target":"java","value":1,"label":"related-to"},{"source":"javascript","target":"html","value":1,"label":"related-to"},{"source":"javascript","target":"c","value":1,"label":"related-to"},{"source":"javascript","target":"r","value":1,"label":"related-to"},{"source":"javascript","target":"babel","value":1,"label":"used-with"},{"source":"javascript","target":"ava","value":1,"label":"used-with"},{"source":"java","target":"html","value":1,"label":"related-to"},{"source":"java","target":"c","value":1,"label":"related-to"},{"source":"java","target":"r","value":1,"label":"related-to"},{"source":"java","target":"babel","value":1,"label":"used-with"},{"source":"java","target":"ava","value":1,"label":"used-with"},{"source":"html","target":"c","value":1,"label":"related-to"},{"source":"html","target":"r","value":1,"label":"related-to"},{"source":"html","target":"babel","value":1,"label":"used-with"},{"source":"html","target":"ava","value":1,"label":"used-with"},{"source":"c","target":"r","value":1,"label":"related-to"},{"source":"c","target":"babel","value":1,"label":"used-with"},{"source":"c","target":"ava","value":1,"label":"used-with"},{"source":"r","target":"babel","value":1,"label":"used-with"},{"source":"r","target":"ava","value":1,"label":"used-with"},{"source":"babel","target":"ava","value":1,"label":"integrates-with"}]},"React\\React_虚拟DOM.md":{"nodes":[{"id":"react","label":"React","group":1,"size":14},{"id":"组件","label":"组件","group":2,"size":14},{"id":"虚拟dom","label":"虚拟DOM","group":2,"size":16},{"id":"jsx","label":"JSX","group":2,"size":2},{"id":"javascript","label":"JavaScript","group":3,"size":2},{"id":"java","label":"Java","group":3,"size":2},{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20},{"id":"ava","label":"AVA","group":4,"size":2}],"links":[{"source":"react","target":"组件","value":1,"label":"uses"},{"source":"react","target":"虚拟dom","value":1,"label":"uses"},{"source":"react","target":"jsx","value":1,"label":"uses"},{"source":"react","target":"javascript","value":1,"label":"written-in"},{"source":"react","target":"java","value":1,"label":"written-in"},{"source":"react","target":"c","value":1,"label":"written-in"},{"source":"react","target":"r","value":1,"label":"written-in"},{"source":"react","target":"ava","value":1,"label":"built-with"},{"source":"组件","target":"虚拟dom","value":1,"label":"related-to"},{"source":"组件","target":"jsx","value":1,"label":"related-to"},{"source":"组件","target":"javascript","value":1,"label":"applied-in"},{"source":"组件","target":"java","value":1,"label":"applied-in"},{"source":"组件","target":"c","value":1,"label":"applied-in"},{"source":"组件","target":"r","value":1,"label":"applied-in"},{"source":"组件","target":"ava","value":1,"label":"used-by"},{"source":"虚拟dom","target":"jsx","value":1,"label":"related-to"},{"source":"虚拟dom","target":"javascript","value":1,"label":"applied-in"},{"source":"虚拟dom","target":"java","value":1,"label":"applied-in"},{"source":"虚拟dom","target":"c","value":1,"label":"applied-in"},{"source":"虚拟dom","target":"r","value":1,"label":"applied-in"},{"source":"虚拟dom","target":"ava","value":1,"label":"used-by"},{"source":"jsx","target":"javascript","value":1,"label":"applied-in"},{"source":"jsx","target":"java","value":1,"label":"applied-in"},{"source":"jsx","target":"c","value":1,"label":"applied-in"},{"source":"jsx","target":"r","value":1,"label":"applied-in"},{"source":"jsx","target":"ava","value":1,"label":"used-by"},{"source":"javascript","target":"java","value":1,"label":"related-to"},{"source":"javascript","target":"c","value":1,"label":"related-to"},{"source":"javascript","target":"r","value":1,"label":"related-to"},{"source":"javascript","target":"ava","value":1,"label":"used-with"},{"source":"java","target":"c","value":1,"label":"related-to"},{"source":"java","target":"r","value":1,"label":"related-to"},{"source":"java","target":"ava","value":1,"label":"used-with"},{"source":"c","target":"r","value":1,"label":"related-to"},{"source":"c","target":"ava","value":1,"label":"used-with"},{"source":"r","target":"ava","value":1,"label":"used-with"}]},"React\\React面试题20260204.md":{"nodes":[{"id":"react","label":"React","group":1,"size":12},{"id":"react-native","label":"React Native","group":1,"size":2},{"id":"组件","label":"组件","group":2,"size":10},{"id":"状态管理","label":"状态管理","group":2,"size":2},{"id":"props","label":"Props","group":2,"size":2},{"id":"虚拟dom","label":"虚拟DOM","group":2,"size":4},{"id":"jsx","label":"JSX","group":2,"size":2},{"id":"javascript","label":"JavaScript","group":3,"size":2},{"id":"java","label":"Java","group":3,"size":2},{"id":"html","label":"HTML","group":3,"size":2},{"id":"c","label":"C","group":3,"size":14},{"id":"r","label":"R","group":3,"size":16},{"id":"ava","label":"AVA","group":4,"size":2}],"links":[{"source":"react","target":"react-native","value":1,"label":"related-to"},{"source":"react","target":"组件","value":1,"label":"uses"},{"source":"react","target":"状态管理","value":1,"label":"uses"},{"source":"react","target":"props","value":1,"label":"uses"},{"source":"react","target":"虚拟dom","value":1,"label":"uses"},{"source":"react","target":"jsx","value":1,"label":"uses"},{"source":"react","target":"javascript","value":1,"label":"written-in"},{"source":"react","target":"java","value":1,"label":"written-in"},{"source":"react","target":"html","value":1,"label":"written-in"},{"source":"react","target":"c","value":1,"label":"written-in"},{"source":"react","target":"r","value":1,"label":"written-in"},{"source":"react","target":"ava","value":1,"label":"built-with"},{"source":"react-native","target":"组件","value":1,"label":"uses"},{"source":"react-native","target":"状态管理","value":1,"label":"uses"},{"source":"react-native","target":"props","value":1,"label":"uses"},{"source":"react-native","target":"虚拟dom","value":1,"label":"uses"},{"source":"react-native","target":"jsx","value":1,"label":"uses"},{"source":"react-native","target":"javascript","value":1,"label":"written-in"},{"source":"react-native","target":"java","value":1,"label":"written-in"},{"source":"react-native","target":"html","value":1,"label":"written-in"},{"source":"react-native","target":"c","value":1,"label":"written-in"},{"source":"react-native","target":"r","value":1,"label":"written-in"},{"source":"react-native","target":"ava","value":1,"label":"built-with"},{"source":"组件","target":"状态管理","value":1,"label":"related-to"},{"source":"组件","target":"props","value":1,"label":"related-to"},{"source":"组件","target":"虚拟dom","value":1,"label":"related-to"},{"source":"组件","target":"jsx","value":1,"label":"related-to"},{"source":"组件","target":"javascript","value":1,"label":"applied-in"},{"source":"组件","target":"java","value":1,"label":"applied-in"},{"source":"组件","target":"html","value":1,"label":"applied-in"},{"source":"组件","target":"c","value":1,"label":"applied-in"},{"source":"组件","target":"r","value":1,"label":"applied-in"},{"source":"组件","target":"ava","value":1,"label":"used-by"},{"source":"状态管理","target":"props","value":1,"label":"related-to"},{"source":"状态管理","target":"虚拟dom","value":1,"label":"related-to"},{"source":"状态管理","target":"jsx","value":1,"label":"related-to"},{"source":"状态管理","target":"javascript","value":1,"label":"applied-in"},{"source":"状态管理","target":"java","value":1,"label":"applied-in"},{"source":"状态管理","target":"html","value":1,"label":"applied-in"},{"source":"状态管理","target":"c","value":1,"label":"applied-in"},{"source":"状态管理","target":"r","value":1,"label":"applied-in"},{"source":"状态管理","target":"ava","value":1,"label":"used-by"},{"source":"props","target":"虚拟dom","value":1,"label":"related-to"},{"source":"props","target":"jsx","value":1,"label":"related-to"},{"source":"props","target":"javascript","value":1,"label":"applied-in"},{"source":"props","target":"java","value":1,"label":"applied-in"},{"source":"props","target":"html","value":1,"label":"applied-in"},{"source":"props","target":"c","value":1,"label":"applied-in"},{"source":"props","target":"r","value":1,"label":"applied-in"},{"source":"props","target":"ava","value":1,"label":"used-by"},{"source":"虚拟dom","target":"jsx","value":1,"label":"related-to"},{"source":"虚拟dom","target":"javascript","value":1,"label":"applied-in"},{"source":"虚拟dom","target":"java","value":1,"label":"applied-in"},{"source":"虚拟dom","target":"html","value":1,"label":"applied-in"},{"source":"虚拟dom","target":"c","value":1,"label":"applied-in"},{"source":"虚拟dom","target":"r","value":1,"label":"applied-in"},{"source":"虚拟dom","target":"ava","value":1,"label":"used-by"},{"source":"jsx","target":"javascript","value":1,"label":"applied-in"},{"source":"jsx","target":"java","value":1,"label":"applied-in"},{"source":"jsx","target":"html","value":1,"label":"applied-in"},{"source":"jsx","target":"c","value":1,"label":"applied-in"},{"source":"jsx","target":"r","value":1,"label":"applied-in"},{"source":"jsx","target":"ava","value":1,"label":"used-by"},{"source":"javascript","target":"java","value":1,"label":"related-to"},{"source":"javascript","target":"html","value":1,"label":"related-to"},{"source":"javascript","target":"c","value":1,"label":"related-to"},{"source":"javascript","target":"r","value":1,"label":"related-to"},{"source":"javascript","target":"ava","value":1,"label":"used-with"},{"source":"java","target":"html","value":1,"label":"related-to"},{"source":"java","target":"c","value":1,"label":"related-to"},{"source":"java","target":"r","value":1,"label":"related-to"},{"source":"java","target":"ava","value":1,"label":"used-with"},{"source":"html","target":"c","value":1,"label":"related-to"},{"source":"html","target":"r","value":1,"label":"related-to"},{"source":"html","target":"ava","value":1,"label":"used-with"},{"source":"c","target":"r","value":1,"label":"related-to"},{"source":"c","target":"ava","value":1,"label":"used-with"},{"source":"r","target":"ava","value":1,"label":"used-with"}]},"React\\Redux.md":{"nodes":[{"id":"react","label":"React","group":1,"size":12},{"id":"组件","label":"组件","group":2,"size":10},{"id":"hooks","label":"Hooks","group":2,"size":2},{"id":"redux","label":"Redux","group":2,"size":20},{"id":"高阶组件","label":"高阶组件","group":2,"size":2},{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20}],"links":[{"source":"react","target":"组件","value":1,"label":"uses"},{"source":"react","target":"hooks","value":1,"label":"uses"},{"source":"react","target":"redux","value":1,"label":"uses"},{"source":"react","target":"高阶组件","value":1,"label":"uses"},{"source":"react","target":"c","value":1,"label":"written-in"},{"source":"react","target":"r","value":1,"label":"written-in"},{"source":"组件","target":"hooks","value":1,"label":"related-to"},{"source":"组件","target":"redux","value":1,"label":"related-to"},{"source":"组件","target":"高阶组件","value":1,"label":"related-to"},{"source":"组件","target":"c","value":1,"label":"applied-in"},{"source":"组件","target":"r","value":1,"label":"applied-in"},{"source":"hooks","target":"redux","value":1,"label":"related-to"},{"source":"hooks","target":"高阶组件","value":1,"label":"related-to"},{"source":"hooks","target":"c","value":1,"label":"applied-in"},{"source":"hooks","target":"r","value":1,"label":"applied-in"},{"source":"redux","target":"高阶组件","value":1,"label":"related-to"},{"source":"redux","target":"c","value":1,"label":"applied-in"},{"source":"redux","target":"r","value":1,"label":"applied-in"},{"source":"高阶组件","target":"c","value":1,"label":"applied-in"},{"source":"高阶组件","target":"r","value":1,"label":"applied-in"},{"source":"c","target":"r","value":1,"label":"related-to"}]},"React\\高阶组件（HOC）.md":{"nodes":[{"id":"react","label":"React","group":1,"size":4},{"id":"组件","label":"组件","group":2,"size":20},{"id":"props","label":"Props","group":2,"size":2},{"id":"高阶组件","label":"高阶组件","group":2,"size":8},{"id":"c","label":"C","group":3,"size":16},{"id":"r","label":"R","group":3,"size":8}],"links":[{"source":"react","target":"组件","value":1,"label":"uses"},{"source":"react","target":"props","value":1,"label":"uses"},{"source":"react","target":"高阶组件","value":1,"label":"uses"},{"source":"react","target":"c","value":1,"label":"written-in"},{"source":"react","target":"r","value":1,"label":"written-in"},{"source":"组件","target":"props","value":1,"label":"related-to"},{"source":"组件","target":"高阶组件","value":1,"label":"related-to"},{"source":"组件","target":"c","value":1,"label":"applied-in"},{"source":"组件","target":"r","value":1,"label":"applied-in"},{"source":"props","target":"高阶组件","value":1,"label":"related-to"},{"source":"props","target":"c","value":1,"label":"applied-in"},{"source":"props","target":"r","value":1,"label":"applied-in"},{"source":"高阶组件","target":"c","value":1,"label":"applied-in"},{"source":"高阶组件","target":"r","value":1,"label":"applied-in"},{"source":"c","target":"r","value":1,"label":"related-to"}]},"ReactNative.md":{"nodes":[{"id":"react","label":"React","group":1,"size":8},{"id":"react-native","label":"React Native","group":1,"size":6},{"id":"组件","label":"组件","group":2,"size":8},{"id":"高阶组件","label":"高阶组件","group":2,"size":2},{"id":"c","label":"C","group":3,"size":12},{"id":"r","label":"R","group":3,"size":10}],"links":[{"source":"react","target":"react-native","value":1,"label":"related-to"},{"source":"react","target":"组件","value":1,"label":"uses"},{"source":"react","target":"高阶组件","value":1,"label":"uses"},{"source":"react","target":"c","value":1,"label":"written-in"},{"source":"react","target":"r","value":1,"label":"written-in"},{"source":"react-native","target":"组件","value":1,"label":"uses"},{"source":"react-native","target":"高阶组件","value":1,"label":"uses"},{"source":"react-native","target":"c","value":1,"label":"written-in"},{"source":"react-native","target":"r","value":1,"label":"written-in"},{"source":"组件","target":"高阶组件","value":1,"label":"related-to"},{"source":"组件","target":"c","value":1,"label":"applied-in"},{"source":"组件","target":"r","value":1,"label":"applied-in"},{"source":"高阶组件","target":"c","value":1,"label":"applied-in"},{"source":"高阶组件","target":"r","value":1,"label":"applied-in"},{"source":"c","target":"r","value":1,"label":"related-to"}]},"tailwind-css.md":{"nodes":[{"id":"组件","label":"组件","group":2,"size":8},{"id":"ref","label":"Ref","group":2,"size":2},{"id":"jsx","label":"JSX","group":2,"size":8},{"id":"javascript","label":"JavaScript","group":3,"size":8},{"id":"java","label":"Java","group":3,"size":8},{"id":"html","label":"HTML","group":3,"size":20},{"id":"css","label":"CSS","group":3,"size":20},{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20},{"id":"npm","label":"npm","group":4,"size":4},{"id":"ava","label":"AVA","group":4,"size":8}],"links":[{"source":"组件","target":"ref","value":1,"label":"related-to"},{"source":"组件","target":"jsx","value":1,"label":"related-to"},{"source":"组件","target":"javascript","value":1,"label":"applied-in"},{"source":"组件","target":"java","value":1,"label":"applied-in"},{"source":"组件","target":"html","value":1,"label":"applied-in"},{"source":"组件","target":"css","value":1,"label":"applied-in"},{"source":"组件","target":"c","value":1,"label":"applied-in"},{"source":"组件","target":"r","value":1,"label":"applied-in"},{"source":"组件","target":"npm","value":1,"label":"used-by"},{"source":"组件","target":"ava","value":1,"label":"used-by"},{"source":"ref","target":"jsx","value":1,"label":"related-to"},{"source":"ref","target":"javascript","value":1,"label":"applied-in"},{"source":"ref","target":"java","value":1,"label":"applied-in"},{"source":"ref","target":"html","value":1,"label":"applied-in"},{"source":"ref","target":"css","value":1,"label":"applied-in"},{"source":"ref","target":"c","value":1,"label":"applied-in"},{"source":"ref","target":"r","value":1,"label":"applied-in"},{"source":"ref","target":"npm","value":1,"label":"used-by"},{"source":"ref","target":"ava","value":1,"label":"used-by"},{"source":"jsx","target":"javascript","value":1,"label":"applied-in"},{"source":"jsx","target":"java","value":1,"label":"applied-in"},{"source":"jsx","target":"html","value":1,"label":"applied-in"},{"source":"jsx","target":"css","value":1,"label":"applied-in"},{"source":"jsx","target":"c","value":1,"label":"applied-in"},{"source":"jsx","target":"r","value":1,"label":"applied-in"},{"source":"jsx","target":"npm","value":1,"label":"used-by"},{"source":"jsx","target":"ava","value":1,"label":"used-by"},{"source":"javascript","target":"java","value":1,"label":"related-to"},{"source":"javascript","target":"html","value":1,"label":"related-to"},{"source":"javascript","target":"css","value":1,"label":"related-to"},{"source":"javascript","target":"c","value":1,"label":"related-to"},{"source":"javascript","target":"r","value":1,"label":"related-to"},{"source":"javascript","target":"npm","value":1,"label":"used-with"},{"source":"javascript","target":"ava","value":1,"label":"used-with"},{"source":"java","target":"html","value":1,"label":"related-to"},{"source":"java","target":"css","value":1,"label":"related-to"},{"source":"java","target":"c","value":1,"label":"related-to"},{"source":"java","target":"r","value":1,"label":"related-to"},{"source":"java","target":"npm","value":1,"label":"used-with"},{"source":"java","target":"ava","value":1,"label":"used-with"},{"source":"html","target":"css","value":1,"label":"related-to"},{"source":"html","target":"c","value":1,"label":"related-to"},{"source":"html","target":"r","value":1,"label":"related-to"},{"source":"html","target":"npm","value":1,"label":"used-with"},{"source":"html","target":"ava","value":1,"label":"used-with"},{"source":"css","target":"c","value":1,"label":"related-to"},{"source":"css","target":"r","value":1,"label":"related-to"},{"source":"css","target":"npm","value":1,"label":"used-with"},{"source":"css","target":"ava","value":1,"label":"used-with"},{"source":"c","target":"r","value":1,"label":"related-to"},{"source":"c","target":"npm","value":1,"label":"used-with"},{"source":"c","target":"ava","value":1,"label":"used-with"},{"source":"r","target":"npm","value":1,"label":"used-with"},{"source":"r","target":"ava","value":1,"label":"used-with"},{"source":"npm","target":"ava","value":1,"label":"integrates-with"}]},"Typescript\\typescript.md":{"nodes":[{"id":"javascript","label":"JavaScript","group":3,"size":8},{"id":"typescript","label":"TypeScript","group":3,"size":20},{"id":"java","label":"Java","group":3,"size":8},{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20},{"id":"json","label":"JSON","group":3,"size":6},{"id":"npm","label":"npm","group":4,"size":4},{"id":"yarn","label":"yarn","group":4,"size":4},{"id":"ava","label":"AVA","group":4,"size":8}],"links":[{"source":"javascript","target":"typescript","value":1,"label":"related-to"},{"source":"javascript","target":"java","value":1,"label":"related-to"},{"source":"javascript","target":"c","value":1,"label":"related-to"},{"source":"javascript","target":"r","value":1,"label":"related-to"},{"source":"javascript","target":"json","value":1,"label":"related-to"},{"source":"javascript","target":"npm","value":1,"label":"used-with"},{"source":"javascript","target":"yarn","value":1,"label":"used-with"},{"source":"javascript","target":"ava","value":1,"label":"used-with"},{"source":"typescript","target":"java","value":1,"label":"related-to"},{"source":"typescript","target":"c","value":1,"label":"related-to"},{"source":"typescript","target":"r","value":1,"label":"related-to"},{"source":"typescript","target":"json","value":1,"label":"related-to"},{"source":"typescript","target":"npm","value":1,"label":"used-with"},{"source":"typescript","target":"yarn","value":1,"label":"used-with"},{"source":"typescript","target":"ava","value":1,"label":"used-with"},{"source":"java","target":"c","value":1,"label":"related-to"},{"source":"java","target":"r","value":1,"label":"related-to"},{"source":"java","target":"json","value":1,"label":"related-to"},{"source":"java","target":"npm","value":1,"label":"used-with"},{"source":"java","target":"yarn","value":1,"label":"used-with"},{"source":"java","target":"ava","value":1,"label":"used-with"},{"source":"c","target":"r","value":1,"label":"related-to"},{"source":"c","target":"json","value":1,"label":"related-to"},{"source":"c","target":"npm","value":1,"label":"used-with"},{"source":"c","target":"yarn","value":1,"label":"used-with"},{"source":"c","target":"ava","value":1,"label":"used-with"},{"source":"r","target":"json","value":1,"label":"related-to"},{"source":"r","target":"npm","value":1,"label":"used-with"},{"source":"r","target":"yarn","value":1,"label":"used-with"},{"source":"r","target":"ava","value":1,"label":"used-with"},{"source":"json","target":"npm","value":1,"label":"used-with"},{"source":"json","target":"yarn","value":1,"label":"used-with"},{"source":"json","target":"ava","value":1,"label":"used-with"},{"source":"npm","target":"yarn","value":1,"label":"integrates-with"},{"source":"npm","target":"ava","value":1,"label":"integrates-with"},{"source":"yarn","target":"ava","value":1,"label":"integrates-with"}]},"Vue3\\vue3.md":{"nodes":[{"id":"react","label":"React","group":1,"size":10},{"id":"vue","label":"Vue","group":1,"size":10},{"id":"组件","label":"组件","group":2,"size":6},{"id":"props","label":"Props","group":2,"size":2},{"id":"ref","label":"Ref","group":2,"size":12},{"id":"proxy","label":"Proxy","group":2,"size":8},{"id":"defineproperty","label":"defineProperty","group":2,"size":2},{"id":"typescript","label":"TypeScript","group":3,"size":2},{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20},{"id":"chef","label":"Chef","group":4,"size":4}],"links":[{"source":"react","target":"vue","value":1,"label":"related-to"},{"source":"react","target":"组件","value":1,"label":"uses"},{"source":"react","target":"props","value":1,"label":"uses"},{"source":"react","target":"ref","value":1,"label":"uses"},{"source":"react","target":"proxy","value":1,"label":"uses"},{"source":"react","target":"defineproperty","value":1,"label":"uses"},{"source":"react","target":"typescript","value":1,"label":"written-in"},{"source":"react","target":"c","value":1,"label":"written-in"},{"source":"react","target":"r","value":1,"label":"written-in"},{"source":"react","target":"chef","value":1,"label":"built-with"},{"source":"vue","target":"组件","value":1,"label":"uses"},{"source":"vue","target":"props","value":1,"label":"uses"},{"source":"vue","target":"ref","value":1,"label":"uses"},{"source":"vue","target":"proxy","value":1,"label":"uses"},{"source":"vue","target":"defineproperty","value":1,"label":"uses"},{"source":"vue","target":"typescript","value":1,"label":"written-in"},{"source":"vue","target":"c","value":1,"label":"written-in"},{"source":"vue","target":"r","value":1,"label":"written-in"},{"source":"vue","target":"chef","value":1,"label":"built-with"},{"source":"组件","target":"props","value":1,"label":"related-to"},{"source":"组件","target":"ref","value":1,"label":"related-to"},{"source":"组件","target":"proxy","value":1,"label":"related-to"},{"source":"组件","target":"defineproperty","value":1,"label":"related-to"},{"source":"组件","target":"typescript","value":1,"label":"applied-in"},{"source":"组件","target":"c","value":1,"label":"applied-in"},{"source":"组件","target":"r","value":1,"label":"applied-in"},{"source":"组件","target":"chef","value":1,"label":"used-by"},{"source":"props","target":"ref","value":1,"label":"related-to"},{"source":"props","target":"proxy","value":1,"label":"related-to"},{"source":"props","target":"defineproperty","value":1,"label":"related-to"},{"source":"props","target":"typescript","value":1,"label":"applied-in"},{"source":"props","target":"c","value":1,"label":"applied-in"},{"source":"props","target":"r","value":1,"label":"applied-in"},{"source":"props","target":"chef","value":1,"label":"used-by"},{"source":"ref","target":"proxy","value":1,"label":"related-to"},{"source":"ref","target":"defineproperty","value":1,"label":"related-to"},{"source":"ref","target":"typescript","value":1,"label":"applied-in"},{"source":"ref","target":"c","value":1,"label":"applied-in"},{"source":"ref","target":"r","value":1,"label":"applied-in"},{"source":"ref","target":"chef","value":1,"label":"used-by"},{"source":"proxy","target":"defineproperty","value":1,"label":"related-to"},{"source":"proxy","target":"typescript","value":1,"label":"applied-in"},{"source":"proxy","target":"c","value":1,"label":"applied-in"},{"source":"proxy","target":"r","value":1,"label":"applied-in"},{"source":"proxy","target":"chef","value":1,"label":"used-by"},{"source":"defineproperty","target":"typescript","value":1,"label":"applied-in"},{"source":"defineproperty","target":"c","value":1,"label":"applied-in"},{"source":"defineproperty","target":"r","value":1,"label":"applied-in"},{"source":"defineproperty","target":"chef","value":1,"label":"used-by"},{"source":"typescript","target":"c","value":1,"label":"related-to"},{"source":"typescript","target":"r","value":1,"label":"related-to"},{"source":"typescript","target":"chef","value":1,"label":"used-with"},{"source":"c","target":"r","value":1,"label":"related-to"},{"source":"c","target":"chef","value":1,"label":"used-with"},{"source":"r","target":"chef","value":1,"label":"used-with"}]},"Vue3\\为什么 Proxy 比 defineProperty 好？。.md":{"nodes":[{"id":"vue","label":"Vue","group":1,"size":8},{"id":"组件","label":"组件","group":2,"size":2},{"id":"proxy","label":"Proxy","group":2,"size":20},{"id":"defineproperty","label":"defineProperty","group":2,"size":20},{"id":"c","label":"C","group":3,"size":18},{"id":"r","label":"R","group":3,"size":20}],"links":[{"source":"vue","target":"组件","value":1,"label":"uses"},{"source":"vue","target":"proxy","value":1,"label":"uses"},{"source":"vue","target":"defineproperty","value":1,"label":"uses"},{"source":"vue","target":"c","value":1,"label":"written-in"},{"source":"vue","target":"r","value":1,"label":"written-in"},{"source":"组件","target":"proxy","value":1,"label":"related-to"},{"source":"组件","target":"defineproperty","value":1,"label":"related-to"},{"source":"组件","target":"c","value":1,"label":"applied-in"},{"source":"组件","target":"r","value":1,"label":"applied-in"},{"source":"proxy","target":"defineproperty","value":1,"label":"related-to"},{"source":"proxy","target":"c","value":1,"label":"applied-in"},{"source":"proxy","target":"r","value":1,"label":"applied-in"},{"source":"defineproperty","target":"c","value":1,"label":"applied-in"},{"source":"defineproperty","target":"r","value":1,"label":"applied-in"},{"source":"c","target":"r","value":1,"label":"related-to"}]},"Vue3\\为什么 ref 要用 .value？.md":{"nodes":[{"id":"react","label":"React","group":1,"size":6},{"id":"vue","label":"Vue","group":1,"size":10},{"id":"组件","label":"组件","group":2,"size":6},{"id":"ref","label":"Ref","group":2,"size":16},{"id":"proxy","label":"Proxy","group":2,"size":4},{"id":"javascript","label":"JavaScript","group":3,"size":8},{"id":"typescript","label":"TypeScript","group":3,"size":4},{"id":"java","label":"Java","group":3,"size":8},{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20},{"id":"ava","label":"AVA","group":4,"size":8}],"links":[{"source":"react","target":"vue","value":1,"label":"related-to"},{"source":"react","target":"组件","value":1,"label":"uses"},{"source":"react","target":"ref","value":1,"label":"uses"},{"source":"react","target":"proxy","value":1,"label":"uses"},{"source":"react","target":"javascript","value":1,"label":"written-in"},{"source":"react","target":"typescript","value":1,"label":"written-in"},{"source":"react","target":"java","value":1,"label":"written-in"},{"source":"react","target":"c","value":1,"label":"written-in"},{"source":"react","target":"r","value":1,"label":"written-in"},{"source":"react","target":"ava","value":1,"label":"built-with"},{"source":"vue","target":"组件","value":1,"label":"uses"},{"source":"vue","target":"ref","value":1,"label":"uses"},{"source":"vue","target":"proxy","value":1,"label":"uses"},{"source":"vue","target":"javascript","value":1,"label":"written-in"},{"source":"vue","target":"typescript","value":1,"label":"written-in"},{"source":"vue","target":"java","value":1,"label":"written-in"},{"source":"vue","target":"c","value":1,"label":"written-in"},{"source":"vue","target":"r","value":1,"label":"written-in"},{"source":"vue","target":"ava","value":1,"label":"built-with"},{"source":"组件","target":"ref","value":1,"label":"related-to"},{"source":"组件","target":"proxy","value":1,"label":"related-to"},{"source":"组件","target":"javascript","value":1,"label":"applied-in"},{"source":"组件","target":"typescript","value":1,"label":"applied-in"},{"source":"组件","target":"java","value":1,"label":"applied-in"},{"source":"组件","target":"c","value":1,"label":"applied-in"},{"source":"组件","target":"r","value":1,"label":"applied-in"},{"source":"组件","target":"ava","value":1,"label":"used-by"},{"source":"ref","target":"proxy","value":1,"label":"related-to"},{"source":"ref","target":"javascript","value":1,"label":"applied-in"},{"source":"ref","target":"typescript","value":1,"label":"applied-in"},{"source":"ref","target":"java","value":1,"label":"applied-in"},{"source":"ref","target":"c","value":1,"label":"applied-in"},{"source":"ref","target":"r","value":1,"label":"applied-in"},{"source":"ref","target":"ava","value":1,"label":"used-by"},{"source":"proxy","target":"javascript","value":1,"label":"applied-in"},{"source":"proxy","target":"typescript","value":1,"label":"applied-in"},{"source":"proxy","target":"java","value":1,"label":"applied-in"},{"source":"proxy","target":"c","value":1,"label":"applied-in"},{"source":"proxy","target":"r","value":1,"label":"applied-in"},{"source":"proxy","target":"ava","value":1,"label":"used-by"},{"source":"javascript","target":"typescript","value":1,"label":"related-to"},{"source":"javascript","target":"java","value":1,"label":"related-to"},{"source":"javascript","target":"c","value":1,"label":"related-to"},{"source":"javascript","target":"r","value":1,"label":"related-to"},{"source":"javascript","target":"ava","value":1,"label":"used-with"},{"source":"typescript","target":"java","value":1,"label":"related-to"},{"source":"typescript","target":"c","value":1,"label":"related-to"},{"source":"typescript","target":"r","value":1,"label":"related-to"},{"source":"typescript","target":"ava","value":1,"label":"used-with"},{"source":"java","target":"c","value":1,"label":"related-to"},{"source":"java","target":"r","value":1,"label":"related-to"},{"source":"java","target":"ava","value":1,"label":"used-with"},{"source":"c","target":"r","value":1,"label":"related-to"},{"source":"c","target":"ava","value":1,"label":"used-with"},{"source":"r","target":"ava","value":1,"label":"used-with"}]},"WebSocket.md":{"nodes":[{"id":"c","label":"C","group":3,"size":20},{"id":"r","label":"R","group":3,"size":20},{"id":"json","label":"JSON","group":3,"size":2},{"id":"nx","label":"NX","group":4,"size":4}],"links":[{"source":"c","target":"r","value":1,"label":"related-to"},{"source":"c","target":"json","value":1,"label":"related-to"},{"source":"c","target":"nx","value":1,"label":"used-with"},{"source":"r","target":"json","value":1,"label":"related-to"},{"source":"r","target":"nx","value":1,"label":"used-with"},{"source":"json","target":"nx","value":1,"label":"used-with"}]}},"fileTreeData":[{"label":"example","value":"example.md","key":"0"},{"label":"Flutter","value":"Flutter","key":"1","children":[{"label":"flutter","value":"Flutter\\flutter.md","key":"1-0"}]},{"label":"Java","value":"Java","key":"2","children":[{"label":"Java_基础","value":"Java\\Java_基础.md","key":"2-0"}]},{"label":"JavaScript","value":"JavaScript","key":"3","children":[{"label":"JavaScript中的微任务与宏任务","value":"JavaScript\\JavaScript中的微任务与宏任务.md","key":"3-0"},{"label":"微任务、宏任务面试题","value":"JavaScript\\微任务、宏任务面试题.md","key":"3-1"}]},{"label":"nextjs-guide","value":"nextjs-guide.md","key":"4"},{"label":"qiankun","value":"qiankun.md","key":"5"},{"label":"React","value":"React","key":"6","children":[{"label":"React-components","value":"React\\React-components.md","key":"6-0"},{"label":"React_19","value":"React\\React_19.md","key":"6-1"},{"label":"React_Fiber架构","value":"React\\React_Fiber架构.md","key":"6-2"},{"label":"React_hook","value":"React\\React_hook.md","key":"6-3"},{"label":"React_jsx","value":"React\\React_jsx.md","key":"6-4"},{"label":"React_虚拟DOM","value":"React\\React_虚拟DOM.md","key":"6-5"},{"label":"React面试题20260204","value":"React\\React面试题20260204.md","key":"6-6"},{"label":"Redux","value":"React\\Redux.md","key":"6-7"},{"label":"高阶组件（HOC）","value":"React\\高阶组件（HOC）.md","key":"6-8"}]},{"label":"ReactNative","value":"ReactNative.md","key":"7"},{"label":"tailwind-css","value":"tailwind-css.md","key":"8"},{"label":"Typescript","value":"Typescript","key":"9","children":[{"label":"typescript","value":"Typescript\\typescript.md","key":"9-0"}]},{"label":"Vue3","value":"Vue3","key":"10","children":[{"label":"vue3","value":"Vue3\\vue3.md","key":"10-0"},{"label":"为什么 Proxy 比 defineProperty 好？。","value":"Vue3\\为什么 Proxy 比 defineProperty 好？。.md","key":"10-1"},{"label":"为什么 ref 要用 .value？","value":"Vue3\\为什么 ref 要用 .value？.md","key":"10-2"}]},{"label":"WebSocket","value":"WebSocket.md","key":"11"}]}]]}]}],["$L12","$L13","$L14","$L15","$L16","$L17","$L18"],"$L19"]}],"loading":null,"isPartial":false}
+12:["$","link","0",{"rel":"stylesheet","href":"/_next/static/chunks/82b56eae54f8bdfa.css","precedence":"next"}]
+13:["$","link","1",{"rel":"stylesheet","href":"/_next/static/chunks/f1a213090f388872.css","precedence":"next"}]
+14:["$","link","2",{"rel":"stylesheet","href":"/_next/static/chunks/ebefbfff0308d4b3.css","precedence":"next"}]
+15:["$","link","3",{"rel":"stylesheet","href":"/_next/static/chunks/be7af2e9a9e4a21e.css","precedence":"next"}]
+16:["$","script","script-0",{"src":"/_next/static/chunks/9e42656a22c84414.js","async":true}]
+17:["$","script","script-1",{"src":"/_next/static/chunks/f2a54fc88ca568fc.js","async":true}]
+18:["$","script","script-2",{"src":"/_next/static/chunks/b2cc37dab822451a.js","async":true}]
+19:["$","$L1a",null,{"children":["$","$1b",null,{"name":"Next.MetadataOutlet","children":"$@1c"}]}]
+1c:null

@@ -6,14 +6,46 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "electron:dev": "concurrently \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:build": "npm run build && electron-builder",
+    "electron:dist": "npm run build && electron-builder --win --mac --linux"
+  },
+  "main": "electron/main.ts",
+  "build": {
+    "appId": "com.interview.question",
+    "productName": "知识点分析系统",
+    "directories": {
+      "output": "dist",
+      "buildResources": "electron/resources"
+    },
+    "files": [
+      "electron/**/*",
+      "out/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "electron/resources/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "electron/resources/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "electron/resources/icon.png"
+    }
   },
   "dependencies": {
     "@douyinfe/semi-icons": "^2.90.13",
     "@douyinfe/semi-ui": "^2.90.13",
     "@tailwindcss/typography": "^0.5.19",
     "@types/d3": "^7.4.3",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
     "d3": "^7.9.0",
+    "electron": "^40.2.1",
+    "electron-builder": "^26.7.0",
     "github-markdown-css": "^5.8.1",
     "highlight.js": "^11.10.0",
     "markdown-css": "^0.0.3",
@@ -22,7 +54,8 @@
     "react-dom": "19.2.3",
     "react-markdown": "^9.0.1",
     "rehype-highlight": "^7.0.0",
-    "remark-gfm": "^4.0.0"
+    "remark-gfm": "^4.0.0",
+    "wait-on": "^9.0.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
