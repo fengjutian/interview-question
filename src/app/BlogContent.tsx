@@ -207,7 +207,7 @@ export default function BlogContent({ articles, articleContents, graphData, file
         placement="right"
         mask={false}
       >
-        <div className="p-4">
+        <div className="p-2">
           <h3 className="text-lg font-semibold mb-4">AI 辅助编辑</h3>
           <p className="mb-4">使用 AI 工具来帮助你编辑和优化 Markdown 内容。</p>
           <div className="border rounded-lg p-4">
@@ -227,11 +227,11 @@ export default function BlogContent({ articles, articleContents, graphData, file
         title="知识图谱"
         visible={knowledgeGraphVisible}
         onCancel={() => setKnowledgeGraphVisible(false)}
-        width={'1000px'}
+        width={'800px'}
         placement="right"
         mask={true}
       >
-        <div className="p-4 h-[600px]">
+        <div className="h-[600px]">
           <KnowledgeGraphClient 
             allFilesGraphData={graphData}
             fileGraphDataMap={fileGraphDataMap}

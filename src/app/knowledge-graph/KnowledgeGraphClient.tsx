@@ -123,8 +123,8 @@ export default function KnowledgeGraphClient({ allFilesGraphData, fileGraphDataM
   return (
     <div>
       {/* 文件选择器 */}
-      <div className="mb-6">
-        <div className="flex gap-4">
+      <div className="mb-2">
+        <div className="flex gap-2">
           <select 
             value={selectedFile} 
             onChange={handleFileChange}
@@ -141,9 +141,22 @@ export default function KnowledgeGraphClient({ allFilesGraphData, fileGraphDataM
       {/* 颜色筛选器 */}
       {uniqueGroups.length > 0 && (
         <div className="mb-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">按类型筛选</h3>
           <div className="flex flex-wrap gap-4">
             {uniqueGroups.map(group => {
               const isSelected = selectedGroups.has(group);
+              
+              // 组名映射
+              const groupNames: Record<number, string> = {
+                1: '框架',
+                2: '概念',
+                3: '语言',
+                4: '工具',
+                5: '模式'
+              };
+              
+              const groupName = groupNames[group] || `组 ${group}`;
+              
               return (
                 <label 
                   key={group}
@@ -166,31 +179,10 @@ export default function KnowledgeGraphClient({ allFilesGraphData, fileGraphDataM
                       boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
                     }}
                   />
-                  <span className="text-sm font-medium">组 {group}</span>
+                  <span className="text-sm font-medium">{groupName}</span>
                 </label>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {/* 选中节点信息 */}
-      {selectedNode && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-          <h4 className="text-md font-semibold mb-2">节点信息</h4>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <span className="font-medium">标签:</span> {selectedNode.label}
-            </div>
-            <div>
-              <span className="font-medium">组:</span> {selectedNode.group}
-            </div>
-            <div>
-              <span className="font-medium">大小:</span> {selectedNode.size || 12}
-            </div>
-            <div>
-              <span className="font-medium">ID:</span> {selectedNode.id}
-            </div>
           </div>
         </div>
       )}
