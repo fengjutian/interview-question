@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { KnowledgeGraphVisualizer } from "@/components/KnowledgeGraphVisualizer";
+import { KnowledgeGraphVisualizer } from "../../components/KnowledgeGraphVisualizer.js";
 import * as d3 from "d3";
 
 interface KnowledgeGraphClientProps {

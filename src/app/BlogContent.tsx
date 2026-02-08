@@ -2,9 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import { FloatButton, SideSheet, Tree, Modal, Input } from '@douyinfe/semi-ui';
-import { IconAIEditLevel1, IconSourceControl } from '@douyinfe/semi-icons';
+import { IconAIEditLevel1, IconSourceControl, IconFolder, IconFile, IconDelete, IconEdit } from '@douyinfe/semi-icons';
 import { MarkdownRenderer } from "../components/MarkdownRenderer.js";
 import KnowledgeGraphClient from "./knowledge-graph/KnowledgeGraphClient.js";
+
+// 条件导入 Node.js 核心模块
+let fs: any = null;
+let path: any = null;
+let fileURLToPath: any = null;
+
+if (typeof window === 'undefined') {
+  // 服务器端环境
+  fs = require('fs');
+  path = require('path');
+  fileURLToPath = require('url').fileURLToPath;
+}
 
 interface Article {
   id: number;
@@ -71,6 +83,37 @@ export default function BlogContent({ articles, articleContents, graphData, file
   const [targetNodeKey, setTargetNodeKey] = useState<string | null>(null);
   const [currentLabel, setCurrentLabel] = useState('');
 
+  // 获取 md 目录的绝对路径
+  const getMdDirPath = (): string => {
+    if (typeof window !== 'undefined') {
+      // 浏览器环境
+      return '';
+    } else {
+      // Node.js 环境
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = path.dirname(__filename);
+      return path.join(__dirname, '..', '..', 'md');
+    }
+  };
+
+  // 确保目录存在
+  const ensureDir = (dirPath: string): void => {
+    if (typeof window === 'undefined' && fs && !fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+  };
+
+  // 获取节点对应的文件系统路径
+  const getNodePath = (node: FileTreeNode): string => {
+    if (typeof window !== 'undefined') {
+      return '';
+    }
+    const mdDir = getMdDirPath();
+    // 构建完整路径
+    const nodePath = node.value;
+    return path.join(mdDir, nodePath);
+  };
+
   // 同步目录树数据
   React.useEffect(() => {
     setTreeData(fileTreeData);
@@ -97,9 +140,44 @@ export default function BlogContent({ articles, articleContents, graphData, file
   };
 
   const addFolder = (parentKey: string | null, label: string) => {
+    let relativePath = '';
+    
+    if (typeof window === 'undefined') {
+      // 服务器端环境，执行文件系统操作
+      const mdDir = getMdDirPath();
+      let folderPath = '';
+      
+      if (parentKey === null) {
+        // 添加到根节点
+        folderPath = path.join(mdDir, label);
+      } else {
+        const found = findNode(parentKey, treeData);
+        if (found) {
+          const parentPath = getNodePath(found.node);
+          folderPath = path.join(parentPath, label);
+        }
+      }
+      
+      // 确保目录存在
+      ensureDir(folderPath);
+      
+      // 生成相对路径
+      relativePath = folderPath.replace(mdDir, '').replace(/^[\\/]/, '').replace(/\\/g, '/');
+    } else {
+      // 客户端环境，仅生成相对路径
+      if (parentKey === null) {
+        relativePath = label;
+      } else {
+        const found = findNode(parentKey, treeData);
+        if (found) {
+          relativePath = `${found.node.value}/${label}`;
+        }
+      }
+    }
+    
     const newFolder: FileTreeNode = {
       label,
-      value: `folder_${Date.now()}`,
+      value: relativePath,
       key: `folder_${Date.now()}`,
       children: []
     };
@@ -122,9 +200,52 @@ export default function BlogContent({ articles, articleContents, graphData, file
   };
 
   const addFile = (parentKey: string | null, label: string) => {
+    // 确保文件名以 .md 结尾
+    const fileName = label.endsWith('.md') ? label : `${label}.md`;
+    let relativePath = '';
+    
+    if (typeof window === 'undefined') {
+      // 服务器端环境，执行文件系统操作
+      const mdDir = getMdDirPath();
+      let filePath = '';
+      
+      if (parentKey === null) {
+        // 添加到根节点
+        filePath = path.join(mdDir, fileName);
+      } else {
+        const found = findNode(parentKey, treeData);
+        if (found) {
+          const parentPath = getNodePath(found.node);
+          filePath = path.join(parentPath, fileName);
+        }
+      }
+      
+      // 确保目录存在
+      ensureDir(path.dirname(filePath));
+      
+      // 创建默认的 Markdown 文件内容
+      const defaultContent = `# ${label.replace('.md', '')}\n\n这是一个新的 Markdown 文件。`;
+      
+      // 写入文件
+      fs.writeFileSync(filePath, defaultContent, 'utf8');
+      
+      // 生成相对路径
+      relativePath = filePath.replace(mdDir, '').replace(/^[\\/]/, '').replace(/\\/g, '/');
+    } else {
+      // 客户端环境，仅生成相对路径
+      if (parentKey === null) {
+        relativePath = fileName;
+      } else {
+        const found = findNode(parentKey, treeData);
+        if (found) {
+          relativePath = `${found.node.value}/${fileName}`;
+        }
+      }
+    }
+    
     const newFile: FileTreeNode = {
-      label,
-      value: `file_${Date.now()}.md`,
+      label: fileName,
+      value: relativePath,
       key: `file_${Date.now()}`
     };
     
@@ -149,6 +270,21 @@ export default function BlogContent({ articles, articleContents, graphData, file
     const found = findNode(key, treeData);
     if (!found) return;
     
+    if (typeof window === 'undefined') {
+      // 服务器端环境，执行文件系统操作
+      // 删除文件系统中的对应文件或文件夹
+      const nodePath = getNodePath(found.node);
+      if (fs && fs.existsSync(nodePath)) {
+        if (found.node.children) {
+          // 删除文件夹（递归删除）
+          fs.rmSync(nodePath, { recursive: true, force: true });
+        } else {
+          // 删除文件
+          fs.unlinkSync(nodePath);
+        }
+      }
+    }
+    
     if (!found.parent) {
       // 根节点
       setTreeData(treeData.filter((_, i) => i !== found.index));
@@ -166,7 +302,37 @@ export default function BlogContent({ articles, articleContents, graphData, file
     const found = findNode(key, treeData);
     if (!found) return;
     
-    const updatedNode = { ...found.node, label: newLabel };
+    let updatedNode = { ...found.node, label: newLabel };
+    
+    if (typeof window === 'undefined') {
+      // 服务器端环境，执行文件系统操作
+      // 重命名文件系统中的对应文件或文件夹
+      const oldPath = getNodePath(found.node);
+      if (fs && fs.existsSync(oldPath)) {
+        let newNodePath = '';
+        if (found.node.children) {
+          // 重命名文件夹
+          const parentPath = path.dirname(oldPath);
+          newNodePath = path.join(parentPath, newLabel);
+        } else {
+          // 重命名文件，确保扩展名正确
+          const parentPath = path.dirname(oldPath);
+          const ext = path.extname(oldPath);
+          const baseName = newLabel.endsWith(ext) ? newLabel : `${newLabel}${ext}`;
+          newNodePath = path.join(parentPath, baseName);
+        }
+        
+        // 执行重命名
+        fs.renameSync(oldPath, newNodePath);
+        
+        // 更新节点的 value（相对路径）
+        const mdDir = getMdDirPath();
+        const relativePath = newNodePath.replace(mdDir, '').replace(/^[\\/]/, '').replace(/\\/g, '/');
+        updatedNode = { ...found.node, label: newLabel, value: relativePath };
+      }
+    }
+    
+    // 更新树数据
     const updateTree = (nodes: FileTreeNode[]): FileTreeNode[] => 
       nodes.map(node => node.key === found.node.key ? updatedNode : 
         node.children ? { ...node, children: updateTree(node.children) } : node);
@@ -271,15 +437,71 @@ export default function BlogContent({ articles, articleContents, graphData, file
       <div className="lg:w-[260px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0 overflow-y-auto">
         <div className="mb-2 flex justify-end">
           <button 
-            className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
+            className="text-xs px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2"
             onClick={() => openDialog('addRootFolder')}
+            title="添加根文件夹"
           >
-            添加根文件夹
+            <IconFolder size="small" />
+            <span>添加根文件夹</span>
           </button>
         </div>
         {/* @ts-ignore */}
         <Tree 
-          treeData={treeData as any} 
+          treeData={treeData.map(node => ({
+            ...node,
+            label: (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <span>{node.label}</span>
+                <div className="flex gap-1 items-center">
+                  {node.children && (
+                    <>
+                      <button 
+                        className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors flex items-center gap-1"
+                        onClick={(e) => { e.stopPropagation(); openDialog('addFolder', node.key); }}
+                        title="添加文件夹"
+                      >
+                        <IconFolder size="small" />
+                        <span>添加</span>
+                      </button>
+                      <button 
+                        className="text-xs px-2 py-1 bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors flex items-center gap-1"
+                        onClick={(e) => { e.stopPropagation(); openDialog('addFile', node.key); }}
+                        title="添加文件"
+                      >
+                        <IconFile size="small" />
+                        <span>添加</span>
+                      </button>
+                    </>
+                  )}
+                  <button 
+                    className="text-xs px-2 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors flex items-center gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      Modal.confirm({
+                        title: '确认删除',
+                        content: '确定要删除吗？',
+                        onOk: () => deleteNode(node.key),
+                        okText: '确定',
+                        cancelText: '取消',
+                      });
+                    }}
+                    title="删除"
+                  >
+                    <IconDelete size="small" />
+                    <span>删除</span>
+                  </button>
+                  <button 
+                    className="text-xs px-2 py-1 bg-yellow-50 text-yellow-600 rounded hover:bg-yellow-100 transition-colors flex items-center gap-1"
+                    onClick={(e) => { e.stopPropagation(); openDialog('rename', node.key, node.label); }}
+                    title="重命名"
+                  >
+                    <IconEdit size="small" />
+                    <span>重命名</span>
+                  </button>
+                </div>
+              </div>
+            )
+          })) as any} 
           directory={true} 
           style={{ width: '100%', height: 'calc(100vh-200px)', border: '1px solid var(--semi-color-border)' } as any} 
           onSelect={(selectedKey: string, selected: boolean, selectedNodeData: any) => {
@@ -311,47 +533,6 @@ export default function BlogContent({ articles, articleContents, graphData, file
               }
             }
           }}
-          renderExtra={(node: any) => (
-            <div className="flex gap-1">
-              {node.children && (
-                <>
-                  <button 
-                    className="text-xs px-1 py-0.5 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
-                    onClick={(e) => { e.stopPropagation(); openDialog('addFolder', node.key); }}
-                  >
-                    添加文件夹
-                  </button>
-                  <button 
-                    className="text-xs px-1 py-0.5 bg-green-100 text-green-600 rounded hover:bg-green-200"
-                    onClick={(e) => { e.stopPropagation(); openDialog('addFile', node.key); }}
-                  >
-                    添加文件
-                  </button>
-                </>
-              )}
-              <button 
-                className="text-xs px-1 py-0.5 bg-red-100 text-red-600 rounded hover:bg-red-200"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  Modal.confirm({
-                    title: '确认删除',
-                    content: '确定要删除吗？',
-                    onOk: () => deleteNode(node.key),
-                    okText: '确定',
-                    cancelText: '取消',
-                  });
-                }}
-              >
-                删除
-              </button>
-              <button 
-                className="text-xs px-1 py-0.5 bg-yellow-100 text-yellow-600 rounded hover:bg-yellow-200"
-                onClick={(e) => { e.stopPropagation(); openDialog('rename', node.key, node.label); }}
-              >
-                重命名
-              </button>
-            </div>
-          )}
         />
         <Modal
           title={dialogLabel}
