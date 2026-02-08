@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { FloatButton, SideSheet } from '@douyinfe/semi-ui';
-import { IconAIEditLevel1 } from '@douyinfe/semi-icons';
+import { IconAIEditLevel1, IconSourceControl } from '@douyinfe/semi-icons';
 import { MarkdownRenderer } from "../components/MarkdownRenderer";
 import KnowledgeGraphClient from "./knowledge-graph/KnowledgeGraphClient";
 
@@ -194,8 +194,9 @@ export default function BlogContent({ articles, articleContents, graphData, file
         )}
       </div>
 
+      <FloatButton icon={< IconSourceControl />} style={{ bottom: '60px' }} onClick={() => setKnowledgeGraphVisible(true)}/>
       <FloatButton icon={<IconAIEditLevel1 />} style={{ bottom: '20px' }} onClick={() => setSideSheetVisible(true)}/>
-      <FloatButton icon={<IconAIEditLevel1 />} style={{ bottom: '80px' }} onClick={() => setKnowledgeGraphVisible(true)}/>
+      
       
       {/* 原有的侧边栏 */}
       <SideSheet

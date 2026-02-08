@@ -174,45 +174,6 @@ export default function KnowledgeGraphClient({ allFilesGraphData, fileGraphDataM
         </div>
       )}
 
-      {/* 查看工具 */}
-      <div className="mb-6 flex gap-2">
-        <button
-          onClick={resetView}
-          className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium transition-colors"
-          title="重置视图"
-        >
-          重置视图
-        </button>
-        <button
-          onClick={zoomIn}
-          className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium transition-colors"
-          title="放大"
-        >
-          放大
-        </button>
-        <button
-          onClick={zoomOut}
-          className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium transition-colors"
-          title="缩小"
-        >
-          缩小
-        </button>
-        <button
-          onClick={() => {
-            const url = new URL(window.location.href);
-            url.pathname = '/knowledge-graph/fullscreen';
-            window.open(url.toString(), '_blank');
-          }}
-          className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium transition-colors"
-          title="全屏展示"
-        >
-          全屏展示
-        </button>
-        <div className="ml-auto text-sm text-gray-600">
-          缩放级别: {Math.round(zoomLevel * 100)}%
-        </div>
-      </div>
-
       {/* 选中节点信息 */}
       {selectedNode && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
