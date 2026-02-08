@@ -123,14 +123,24 @@ app.on('window-all-closed', () => {
 });
 
 // 文件系统操作处理
-ipcMain.handle('fs:mkdir', (event, dirPath) => {
+ipcMain.handle('fs:mkdir', (event, dirPath, options) => {
   try {
     if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
+      fs.mkdirSync(dirPath, options || { recursive: true });
     }
     return true;
   } catch (error) {
     console.error('Error creating directory:', error);
+    throw error;
+  }
+});
+
+// 应用程序操作处理
+ipcMain.handle('app:getPath', (event, name) => {
+  try {
+    return app.getPath(name);
+  } catch (error) {
+    console.error('Error getting path:', error);
     throw error;
   }
 });

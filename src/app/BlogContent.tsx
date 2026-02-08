@@ -94,8 +94,21 @@ export default function BlogContent({ articles, articleContents, graphData, file
   const [currentLabel, setCurrentLabel] = useState('');
 
   // 获取 md 目录的绝对路径
-  const getMdDirPath = (): string => {
+  const getMdDirPath = async (): Promise<string> => {
     if (typeof window !== 'undefined') {
+      // 浏览器环境或 Electron 环境
+      if (electronFs && window.electron && window.electron.app) {
+        // Electron 环境，使用用户数据目录
+        try {
+          const userDataDir = await window.electron.app.getPath('userData');
+          const mdDir = path.join(userDataDir, 'md');
+          return mdDir;
+        } catch (error) {
+          console.error('Error getting user data directory:', error);
+          // 如果获取用户数据目录失败，回退到当前工作目录
+          return path.join(process.cwd(), 'src', 'md');
+        }
+      }
       // 浏览器环境
       return '';
     } else {
@@ -115,17 +128,15 @@ export default function BlogContent({ articles, articleContents, graphData, file
       // Electron 环境
       const exists = await electronFs.existsSync(dirPath);
       if (!exists) {
-        await electronFs.mkdir(dirPath);
+        await electronFs.mkdir(dirPath, { recursive: true });
       }
     }
   };
 
   // 获取节点对应的文件系统路径
-  const getNodePath = (node: FileTreeNode): string => {
-    if (typeof window !== 'undefined') {
-      return '';
-    }
-    const mdDir = getMdDirPath();
+  const getNodePath = async (node: FileTreeNode): Promise<string> => {
+    const mdDir = await getMdDirPath();
+    if (!mdDir) return '';
     // 构建完整路径
     const nodePath = node.value;
     return path.join(mdDir, nodePath);
@@ -171,7 +182,7 @@ export default function BlogContent({ articles, articleContents, graphData, file
       }
 
       // 执行文件系统操作
-      const mdDir = getMdDirPath();
+      const mdDir = await getMdDirPath();
       let folderPath = '';
       
       if (parentKey === null) {
@@ -180,10 +191,13 @@ export default function BlogContent({ articles, articleContents, graphData, file
       } else {
         const found = findNode(parentKey, treeData);
         if (found) {
-          const parentPath = getNodePath(found.node);
+          const parentPath = await getNodePath(found.node);
           folderPath = path.join(parentPath, label);
         }
       }
+      
+      // 输出调试信息
+      console.log('Adding folder:', { mdDir, folderPath, parentKey, label });
       
       // 确保目录存在
       await ensureDir(folderPath);
@@ -233,7 +247,7 @@ export default function BlogContent({ articles, articleContents, graphData, file
       }
 
       // 执行文件系统操作
-      const mdDir = getMdDirPath();
+      const mdDir = await getMdDirPath();
       let filePath = '';
       
       if (parentKey === null) {
@@ -242,10 +256,13 @@ export default function BlogContent({ articles, articleContents, graphData, file
       } else {
         const found = findNode(parentKey, treeData);
         if (found) {
-          const parentPath = getNodePath(found.node);
+          const parentPath = await getNodePath(found.node);
           filePath = path.join(parentPath, fileName);
         }
       }
+      
+      // 输出调试信息
+      console.log('Adding file:', { mdDir, filePath, parentKey, fileName });
       
       // 确保目录存在
       await ensureDir(path.dirname(filePath));
@@ -297,7 +314,7 @@ export default function BlogContent({ articles, articleContents, graphData, file
     
     try {
       // 执行文件系统操作
-      const nodePath = getNodePath(found.node);
+      const nodePath = await getNodePath(found.node);
       
       if (typeof window === 'undefined') {
         // 服务器端环境
@@ -359,16 +376,16 @@ export default function BlogContent({ articles, articleContents, graphData, file
       }
 
       // 执行文件系统操作
-      const oldPath = getNodePath(found.node);
+      const oldPath = await getNodePath(found.node);
       let newPath = '';
       
       if (!found.parent) {
         // 根节点
-        const mdDir = getMdDirPath();
+        const mdDir = await getMdDirPath();
         newPath = path.join(mdDir, newLabel);
       } else {
         // 子节点
-        const parentPath = getNodePath(found.parent);
+        const parentPath = await getNodePath(found.parent);
         newPath = path.join(parentPath, newLabel);
       }
       

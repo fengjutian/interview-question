@@ -9,9 +9,9 @@ contextBridge.exposeInMainWorld('electron', {
   },
   // 文件系统操作
   fs: {
-    mkdir: (path) => {
+    mkdir: (path, options) => {
       return new Promise((resolve, reject) => {
-        ipcRenderer.invoke('fs:mkdir', path).then(resolve).catch(reject);
+        ipcRenderer.invoke('fs:mkdir', path, options).then(resolve).catch(reject);
       });
     },
     writeFile: (path, content) => {
@@ -32,6 +32,14 @@ contextBridge.exposeInMainWorld('electron', {
     existsSync: (path) => {
       return new Promise((resolve, reject) => {
         ipcRenderer.invoke('fs:existsSync', path).then(resolve).catch(reject);
+      });
+    }
+  },
+  // 应用程序操作
+  app: {
+    getPath: (name) => {
+      return new Promise((resolve, reject) => {
+        ipcRenderer.invoke('app:getPath', name).then(resolve).catch(reject);
       });
     }
   }
