@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { FloatButton, SideSheet } from '@douyinfe/semi-ui';
+import React, { useState, useEffect } from "react";
+import { FloatButton, SideSheet, Tree } from '@douyinfe/semi-ui';
 import { IconAIEditLevel1, IconSourceControl } from '@douyinfe/semi-icons';
 import { MarkdownRenderer } from "../components/MarkdownRenderer";
 import KnowledgeGraphClient from "./knowledge-graph/KnowledgeGraphClient";
@@ -14,6 +14,13 @@ interface Article {
   file: string;
   category: string;
   tags: string[];
+}
+
+interface FileTreeNode {
+  label: string;
+  value: string;
+  key: string;
+  children?: FileTreeNode[];
 }
 
 interface BlogContentProps {
@@ -34,9 +41,10 @@ interface BlogContentProps {
   };
   fileList: string[];
   fileGraphDataMap: Record<string, any>;
+  fileTreeData: FileTreeNode[];
 }
 
-export default function BlogContent({ articles, articleContents, graphData, fileList, fileGraphDataMap }: BlogContentProps) {
+export default function BlogContent({ articles, articleContents, graphData, fileList, fileGraphDataMap, fileTreeData }: BlogContentProps) {
   // 状态管理：当前选中的文章
   const [selectedArticle, setSelectedArticle] = useState(articles[0]);
   // 状态管理：当前主题
@@ -96,6 +104,16 @@ export default function BlogContent({ articles, articleContents, graphData, file
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-120px)]">
+      {/* 左侧目录树 */}
+      <div className="lg:w-[260px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0 overflow-y-auto">
+        <h3 className="text-lg font-semibold mb-4">文件目录</h3>
+        <Tree 
+          treeData={fileTreeData} 
+          directory 
+          style={{ width: '100%', height: 'calc(100vh-200px)', border: '1px solid var(--semi-color-border)' }} 
+        />
+      </div>
+
       {/* 左侧内容 */}
       <div className="lg:w-[800px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0 overflow-y-auto">
         
