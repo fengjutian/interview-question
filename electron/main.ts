@@ -1,6 +1,10 @@
 import { app, BrowserWindow, Menu } from 'electron';
 import * as path from 'path';
-import * as url from 'url';
+import { fileURLToPath } from 'url';
+import * as url_module from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let mainWindow: BrowserWindow | null;
 
@@ -9,9 +13,9 @@ function createWindow() {
     width: 1200,
     height: 800,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: path.join(__dirname, 'preload.mjs'),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
@@ -19,7 +23,7 @@ function createWindow() {
 
   if (app.isPackaged) {
     mainWindow.loadURL(
-      url.format({
+      url_module.format({
         pathname: path.join(__dirname, '../out/index.html'),
         protocol: 'file:',
         slashes: true,
