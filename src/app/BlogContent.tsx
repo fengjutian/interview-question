@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FloatButton, Tree, Modal, Input } from '@douyinfe/semi-ui';
-import { IconAIEditLevel1, IconSourceControl, IconFolder, IconFile, IconDelete, IconEdit } from '@douyinfe/semi-icons';
+import { FloatButton, Modal, Input } from '@douyinfe/semi-ui';
+import { IconAIEditLevel1, IconSourceControl } from '@douyinfe/semi-icons';
 import { MarkdownRenderer } from "../components/MarkdownRenderer.js";
 import { AIEditSideSheet } from "../components/AIEditSideSheet.js";
 import { KnowledgeGraphSideSheet } from "../components/KnowledgeGraphSideSheet.js";
+import { SearchBar } from "../components/SearchBar.js";
+import { CategoryFilter } from "../components/CategoryFilter.js";
+import { FileTree } from "../components/FileTree.js";
 
 // 条件导入 Node.js 核心模块
 let fs: any = null;
@@ -416,106 +419,41 @@ export default function BlogContent({ articles, articleContents, graphData, file
   return (
     <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-120px)]">
       {/* 左侧目录树 */}
-      <div className="lg:w-[260px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0 overflow-y-auto">
-        <div className="mb-2 flex justify-end">
-          <button 
-            className="text-xs px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2"
-            onClick={() => openDialog('addRootFolder')}
-            title="添加根文件夹"
-          >
-            <IconFolder size="small" />
-            <span>添加根文件夹</span>
-          </button>
-        </div>
-        {/* @ts-ignore */}
-        <Tree 
-          treeData={treeData.map(node => ({
-            ...node,
-            label: (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                <span>{node.label}</span>
-                <div className="flex gap-1 items-center">
-                  {node.children && (
-                    <>
-                      <button 
-                        className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors flex items-center gap-1"
-                        onClick={(e) => { e.stopPropagation(); openDialog('addFolder', node.key); }}
-                        title="添加文件夹"
-                      >
-                        <IconFolder size="small" />
-                        <span>添加</span>
-                      </button>
-                      <button 
-                        className="text-xs px-2 py-1 bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors flex items-center gap-1"
-                        onClick={(e) => { e.stopPropagation(); openDialog('addFile', node.key); }}
-                        title="添加文件"
-                      >
-                        <IconFile size="small" />
-                        <span>添加</span>
-                      </button>
-                    </>
-                  )}
-                  <button 
-                    className="text-xs px-2 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors flex items-center gap-1"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      Modal.confirm({
-                        title: '确认删除',
-                        content: '确定要删除吗？',
-                        onOk: () => deleteNode(node.key),
-                        okText: '确定',
-                        cancelText: '取消',
-                      });
-                    }}
-                    title="删除"
-                  >
-                    <IconDelete size="small" />
-                    <span>删除</span>
-                  </button>
-                  <button 
-                    className="text-xs px-2 py-1 bg-yellow-50 text-yellow-600 rounded hover:bg-yellow-100 transition-colors flex items-center gap-1"
-                    onClick={(e) => { e.stopPropagation(); openDialog('rename', node.key, node.label); }}
-                    title="重命名"
-                  >
-                    <IconEdit size="small" />
-                    <span>重命名</span>
-                  </button>
-                </div>
-              </div>
-            )
-          })) as any} 
-          directory={true} 
-          style={{ width: '100%', height: 'calc(100vh-200px)', border: '1px solid var(--semi-color-border)' } as any} 
-          onSelect={(selectedKey: string, selected: boolean, selectedNodeData: any) => {
-            if (selectedKey) {
-              const findNodeByKey = (nodes: FileTreeNode[]): FileTreeNode | null => {
-                for (const node of nodes) {
-                  if (node.key === selectedKey) {
-                    return node;
-                  }
-                  if (node.children) {
-                    const found = findNodeByKey(node.children);
-                    if (found) return found;
-                  }
-                }
-                return null;
-              };
-              const selectedNode = findNodeByKey(treeData);
-              if (selectedNode && !selectedNode.children) {
-                const selectedFilePath = selectedNode.value;
-                // 标准化路径格式，确保与 articles 中的路径格式一致
-                const normalizedPath = selectedFilePath.replace(/\\/g, '/');
-                const correspondingArticle = articles.find(article => {
-                  const articleFileNormalized = article.file.replace(/\\/g, '/');
-                  return articleFileNormalized === normalizedPath;
-                });
-                if (correspondingArticle) {
-                  setSelectedArticle(correspondingArticle);
-                }
+      <FileTree 
+        treeData={treeData}
+        onAddRootFolder={() => openDialog('addRootFolder')}
+        onAddFolder={(parentKey) => openDialog('addFolder', parentKey)}
+        onAddFile={(parentKey) => openDialog('addFile', parentKey)}
+        onDelete={deleteNode}
+        onRename={(key, label) => openDialog('rename', key, label)}
+        onSelect={(selectedKey) => {
+          const findNodeByKey = (nodes: FileTreeNode[]): FileTreeNode | null => {
+            for (const node of nodes) {
+              if (node.key === selectedKey) {
+                return node;
+              }
+              if (node.children) {
+                const found = findNodeByKey(node.children);
+                if (found) return found;
               }
             }
-          }}
-        />
+            return null;
+          };
+          const selectedNode = findNodeByKey(treeData);
+          if (selectedNode && !selectedNode.children) {
+            const selectedFilePath = selectedNode.value;
+            // 标准化路径格式，确保与 articles 中的路径格式一致
+            const normalizedPath = selectedFilePath.replace(/\\/g, '/');
+            const correspondingArticle = articles.find(article => {
+              const articleFileNormalized = article.file.replace(/\\/g, '/');
+              return articleFileNormalized === normalizedPath;
+            });
+            if (correspondingArticle) {
+              setSelectedArticle(correspondingArticle);
+            }
+          }
+        }}
+      />
         <Modal
           title={dialogLabel}
           visible={dialogVisible}
@@ -539,49 +477,18 @@ export default function BlogContent({ articles, articleContents, graphData, file
       <div className="lg:w-[800px] bg-white p-6 rounded-lg flex-shrink-0 min-w-0 overflow-y-auto">
         
         {/* 搜索框 */}
-        <div className="mb-6">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="搜索内容..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {/* 搜索图标 */}
-            <div className="absolute left-3 top-2.5 text-gray-400">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            {/* 清除按钮 */}
-            {searchTerm && (
-              <button
-                onClick={clearSearch}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-          </div>
-        </div>
+        <SearchBar 
+          searchTerm={searchTerm} 
+          onSearchChange={setSearchTerm} 
+          onClearSearch={clearSearch} 
+        />
         
         {/* 分类筛选 */}
-        <div className="mb-6">
-          <div className="flex flex-wrap gap-2">
-            {categories.map(category => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-3 py-1 rounded-full text-sm ${selectedCategory === category ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
+        <CategoryFilter 
+          categories={categories} 
+          selectedCategory={selectedCategory} 
+          onSelectCategory={setSelectedCategory} 
+        />
         
         <div className="w-full">
           <MarkdownRenderer content={markdownContent} theme={theme} searchTerm={searchTerm} />
