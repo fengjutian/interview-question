@@ -14,12 +14,18 @@ import { FileTree } from "../components/FileTree.js";
 let fs: any = null;
 let path: any = null;
 let fileURLToPath: any = null;
+let electronFs: any = null;
 
 if (typeof window === 'undefined') {
   // 服务器端环境
   fs = require('fs');
   path = require('path');
   fileURLToPath = require('url').fileURLToPath;
+} else if (window.electron && window.electron.fs) {
+  // Electron 环境
+  electronFs = window.electron.fs;
+  // 在 Electron 环境中，使用 Node.js 的 path 模块
+  path = require('path');
 }
 
 interface Article {
@@ -99,9 +105,18 @@ export default function BlogContent({ articles, articleContents, graphData, file
   };
 
   // 确保目录存在
-  const ensureDir = (dirPath: string): void => {
-    if (typeof window === 'undefined' && fs && !fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
+  const ensureDir = async (dirPath: string): Promise<void> => {
+    if (typeof window === 'undefined') {
+      // 服务器端环境
+      if (fs && !fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+      }
+    } else if (electronFs) {
+      // Electron 环境
+      const exists = await electronFs.existsSync(dirPath);
+      if (!exists) {
+        await electronFs.mkdir(dirPath);
+      }
     }
   };
 
@@ -141,11 +156,21 @@ export default function BlogContent({ articles, articleContents, graphData, file
     return null;
   };
 
-  const addFolder = (parentKey: string | null, label: string) => {
+  const addFolder = async (parentKey: string | null, label: string) => {
     let relativePath = '';
     
-    if (typeof window === 'undefined') {
-      // 服务器端环境，执行文件系统操作
+    try {
+      // 生成相对路径
+      if (parentKey === null) {
+        relativePath = label;
+      } else {
+        const found = findNode(parentKey, treeData);
+        if (found) {
+          relativePath = `${found.node.value}/${label}`;
+        }
+      }
+
+      // 执行文件系统操作
       const mdDir = getMdDirPath();
       let folderPath = '';
       
@@ -161,53 +186,53 @@ export default function BlogContent({ articles, articleContents, graphData, file
       }
       
       // 确保目录存在
-      ensureDir(folderPath);
+      await ensureDir(folderPath);
+
+      const newFolder: FileTreeNode = {
+        label,
+        value: relativePath,
+        key: `folder_${Date.now()}`,
+        children: []
+      };
       
-      // 生成相对路径
-      relativePath = folderPath.replace(mdDir, '').replace(/^[\\/]/, '').replace(/\\/g, '/');
-    } else {
-      // 客户端环境，仅生成相对路径
       if (parentKey === null) {
-        relativePath = label;
+        // 添加到根节点
+        setTreeData([...treeData, newFolder]);
       } else {
         const found = findNode(parentKey, treeData);
-        if (found) {
-          relativePath = `${found.node.value}/${label}`;
+        if (found && found.node.children) {
+          const updatedChildren = [...found.node.children, newFolder];
+          const updatedNode = { ...found.node, children: updatedChildren };
+          // 更新树数据
+          const updateTree = (nodes: FileTreeNode[]): FileTreeNode[] => 
+            nodes.map(node => node.key === found.node.key ? updatedNode : 
+              node.children ? { ...node, children: updateTree(node.children) } : node);
+          setTreeData(updateTree(treeData));
         }
       }
-    }
-    
-    const newFolder: FileTreeNode = {
-      label,
-      value: relativePath,
-      key: `folder_${Date.now()}`,
-      children: []
-    };
-    
-    if (parentKey === null) {
-      // 添加到根节点
-      setTreeData([...treeData, newFolder]);
-    } else {
-      const found = findNode(parentKey, treeData);
-      if (found && found.node.children) {
-        const updatedChildren = [...found.node.children, newFolder];
-        const updatedNode = { ...found.node, children: updatedChildren };
-        // 更新树数据
-        const updateTree = (nodes: FileTreeNode[]): FileTreeNode[] => 
-          nodes.map(node => node.key === found.node.key ? updatedNode : 
-            node.children ? { ...node, children: updateTree(node.children) } : node);
-        setTreeData(updateTree(treeData));
-      }
+    } catch (error) {
+      console.error('Error adding folder:', error);
+      alert('添加文件夹失败: ' + (error as Error).message);
     }
   };
 
-  const addFile = (parentKey: string | null, label: string) => {
+  const addFile = async (parentKey: string | null, label: string) => {
     // 确保文件名以 .md 结尾
     const fileName = label.endsWith('.md') ? label : `${label}.md`;
     let relativePath = '';
     
-    if (typeof window === 'undefined') {
-      // 服务器端环境，执行文件系统操作
+    try {
+      // 生成相对路径
+      if (parentKey === null) {
+        relativePath = fileName;
+      } else {
+        const found = findNode(parentKey, treeData);
+        if (found) {
+          relativePath = `${found.node.value}/${fileName}`;
+        }
+      }
+
+      // 执行文件系统操作
       const mdDir = getMdDirPath();
       let filePath = '';
       
@@ -223,122 +248,157 @@ export default function BlogContent({ articles, articleContents, graphData, file
       }
       
       // 确保目录存在
-      ensureDir(path.dirname(filePath));
+      await ensureDir(path.dirname(filePath));
       
       // 创建默认的 Markdown 文件内容
       const defaultContent = `# ${label.replace('.md', '')}\n\n这是一个新的 Markdown 文件。`;
       
       // 写入文件
-      fs.writeFileSync(filePath, defaultContent, 'utf8');
+      if (typeof window === 'undefined') {
+        // 服务器端环境
+        if (fs) {
+          fs.writeFileSync(filePath, defaultContent, 'utf8');
+        }
+      } else if (electronFs) {
+        // Electron 环境
+        await electronFs.writeFile(filePath, defaultContent);
+      }
+
+      const newFile: FileTreeNode = {
+        label: fileName,
+        value: relativePath,
+        key: `file_${Date.now()}`
+      };
       
-      // 生成相对路径
-      relativePath = filePath.replace(mdDir, '').replace(/^[\\/]/, '').replace(/\\/g, '/');
-    } else {
-      // 客户端环境，仅生成相对路径
       if (parentKey === null) {
-        relativePath = fileName;
+        // 添加到根节点（文件通常不在根节点，但允许）
+        setTreeData([...treeData, newFile]);
       } else {
         const found = findNode(parentKey, treeData);
-        if (found) {
-          relativePath = `${found.node.value}/${fileName}`;
+        if (found && found.node.children) {
+          const updatedChildren = [...found.node.children, newFile];
+          const updatedNode = { ...found.node, children: updatedChildren };
+          // 更新树数据
+          const updateTree = (nodes: FileTreeNode[]): FileTreeNode[] => 
+            nodes.map(node => node.key === found.node.key ? updatedNode : 
+              node.children ? { ...node, children: updateTree(node.children) } : node);
+          setTreeData(updateTree(treeData));
         }
       }
+    } catch (error) {
+      console.error('Error adding file:', error);
+      alert('添加文件失败: ' + (error as Error).message);
     }
+  };
+
+  const deleteNode = async (key: string) => {
+    const found = findNode(key, treeData);
+    if (!found) return;
     
-    const newFile: FileTreeNode = {
-      label: fileName,
-      value: relativePath,
-      key: `file_${Date.now()}`
-    };
-    
-    if (parentKey === null) {
-      // 添加到根节点（文件通常不在根节点，但允许）
-      setTreeData([...treeData, newFile]);
-    } else {
-      const found = findNode(parentKey, treeData);
-      if (found && found.node.children) {
-        const updatedChildren = [...found.node.children, newFile];
-        const updatedNode = { ...found.node, children: updatedChildren };
-        // 更新树数据
+    try {
+      // 执行文件系统操作
+      const nodePath = getNodePath(found.node);
+      
+      if (typeof window === 'undefined') {
+        // 服务器端环境
+        if (fs && fs.existsSync(nodePath)) {
+          if (found.node.children) {
+            // 删除文件夹（递归删除）
+            fs.rmSync(nodePath, { recursive: true, force: true });
+          } else {
+            // 删除文件
+            fs.unlinkSync(nodePath);
+          }
+        }
+      } else if (electronFs) {
+        // Electron 环境
+        const exists = await electronFs.existsSync(nodePath);
+        if (exists) {
+          if (found.node.children) {
+            // 删除文件夹（递归删除）
+            await electronFs.rm(nodePath, { recursive: true, force: true });
+          } else {
+            // 删除文件
+            await electronFs.rm(nodePath);
+          }
+        }
+      }
+
+      // 更新树数据
+      if (!found.parent) {
+        // 根节点
+        setTreeData(treeData.filter((_, i) => i !== found.index));
+      } else {
+        const updatedChildren = found.parent.children!.filter((_, i) => i !== found.index);
+        const updatedNode = { ...found.parent, children: updatedChildren };
         const updateTree = (nodes: FileTreeNode[]): FileTreeNode[] => 
-          nodes.map(node => node.key === found.node.key ? updatedNode : 
+          nodes.map(node => node.key === found.parent!.key ? updatedNode : 
             node.children ? { ...node, children: updateTree(node.children) } : node);
         setTreeData(updateTree(treeData));
       }
+    } catch (error) {
+      console.error('Error deleting node:', error);
+      alert('删除失败: ' + (error as Error).message);
     }
   };
 
-  const deleteNode = (key: string) => {
+  const renameNode = async (key: string, newLabel: string) => {
     const found = findNode(key, treeData);
     if (!found) return;
     
-    if (typeof window === 'undefined') {
-      // 服务器端环境，执行文件系统操作
-      // 删除文件系统中的对应文件或文件夹
-      const nodePath = getNodePath(found.node);
-      if (fs && fs.existsSync(nodePath)) {
-        if (found.node.children) {
-          // 删除文件夹（递归删除）
-          fs.rmSync(nodePath, { recursive: true, force: true });
-        } else {
-          // 删除文件
-          fs.unlinkSync(nodePath);
+    try {
+      // 生成新的相对路径
+      let newRelativePath = '';
+      if (!found.parent) {
+        // 根节点
+        newRelativePath = newLabel;
+      } else {
+        // 子节点
+        const parentPath = found.parent.value;
+        newRelativePath = `${parentPath}/${newLabel}`;
+      }
+
+      // 执行文件系统操作
+      const oldPath = getNodePath(found.node);
+      let newPath = '';
+      
+      if (!found.parent) {
+        // 根节点
+        const mdDir = getMdDirPath();
+        newPath = path.join(mdDir, newLabel);
+      } else {
+        // 子节点
+        const parentPath = getNodePath(found.parent);
+        newPath = path.join(parentPath, newLabel);
+      }
+      
+      if (typeof window === 'undefined') {
+        // 服务器端环境
+        if (fs && fs.existsSync(oldPath)) {
+          // 执行重命名
+          fs.renameSync(oldPath, newPath);
+        }
+      } else if (electronFs) {
+        // Electron 环境
+        const exists = await electronFs.existsSync(oldPath);
+        if (exists) {
+          // 执行重命名
+          await electronFs.rename(oldPath, newPath);
         }
       }
-    }
-    
-    if (!found.parent) {
-      // 根节点
-      setTreeData(treeData.filter((_, i) => i !== found.index));
-    } else {
-      const updatedChildren = found.parent.children!.filter((_, i) => i !== found.index);
-      const updatedNode = { ...found.parent, children: updatedChildren };
+
+      // 更新节点
+      const updatedNode = { ...found.node, label: newLabel, value: newRelativePath };
+
+      // 更新树数据
       const updateTree = (nodes: FileTreeNode[]): FileTreeNode[] => 
-        nodes.map(node => node.key === found.parent!.key ? updatedNode : 
+        nodes.map(node => node.key === found.node.key ? updatedNode : 
           node.children ? { ...node, children: updateTree(node.children) } : node);
       setTreeData(updateTree(treeData));
+    } catch (error) {
+      console.error('Error renaming node:', error);
+      alert('重命名失败: ' + (error as Error).message);
     }
-  };
-
-  const renameNode = (key: string, newLabel: string) => {
-    const found = findNode(key, treeData);
-    if (!found) return;
-    
-    let updatedNode = { ...found.node, label: newLabel };
-    
-    if (typeof window === 'undefined') {
-      // 服务器端环境，执行文件系统操作
-      // 重命名文件系统中的对应文件或文件夹
-      const oldPath = getNodePath(found.node);
-      if (fs && fs.existsSync(oldPath)) {
-        let newNodePath = '';
-        if (found.node.children) {
-          // 重命名文件夹
-          const parentPath = path.dirname(oldPath);
-          newNodePath = path.join(parentPath, newLabel);
-        } else {
-          // 重命名文件，确保扩展名正确
-          const parentPath = path.dirname(oldPath);
-          const ext = path.extname(oldPath);
-          const baseName = newLabel.endsWith(ext) ? newLabel : `${newLabel}${ext}`;
-          newNodePath = path.join(parentPath, baseName);
-        }
-        
-        // 执行重命名
-        fs.renameSync(oldPath, newNodePath);
-        
-        // 更新节点的 value（相对路径）
-        const mdDir = getMdDirPath();
-        const relativePath = newNodePath.replace(mdDir, '').replace(/^[\\/]/, '').replace(/\\/g, '/');
-        updatedNode = { ...found.node, label: newLabel, value: relativePath };
-      }
-    }
-    
-    // 更新树数据
-    const updateTree = (nodes: FileTreeNode[]): FileTreeNode[] => 
-      nodes.map(node => node.key === found.node.key ? updatedNode : 
-        node.children ? { ...node, children: updateTree(node.children) } : node);
-    setTreeData(updateTree(treeData));
   };
 
   // 打开对话框
@@ -372,7 +432,7 @@ export default function BlogContent({ articles, articleContents, graphData, file
   };
 
   // 处理对话框确认
-  const handleDialogOk = (e?: any) => {
+  const handleDialogOk = async (e?: any) => {
     if (!inputValue.trim()) {
       // 输入为空，可以给出提示，这里直接关闭
       setDialogVisible(false);
@@ -380,16 +440,16 @@ export default function BlogContent({ articles, articleContents, graphData, file
     }
     switch (dialogType) {
       case 'addRootFolder':
-        addFolder(null, inputValue);
+        await addFolder(null, inputValue);
         break;
       case 'addFolder':
-        if (targetNodeKey) addFolder(targetNodeKey, inputValue);
+        if (targetNodeKey) await addFolder(targetNodeKey, inputValue);
         break;
       case 'addFile':
-        if (targetNodeKey) addFile(targetNodeKey, inputValue);
+        if (targetNodeKey) await addFile(targetNodeKey, inputValue);
         break;
       case 'rename':
-        if (targetNodeKey) renameNode(targetNodeKey, inputValue);
+        if (targetNodeKey) await renameNode(targetNodeKey, inputValue);
         break;
     }
     setDialogVisible(false);

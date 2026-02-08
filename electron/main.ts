@@ -1,7 +1,8 @@
-import { app, BrowserWindow, Menu } from 'electron';
+import { app, BrowserWindow, Menu, ipcMain } from 'electron';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import * as url_module from 'url';
+import * as fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -118,5 +119,69 @@ app.on('ready', () => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
+  }
+});
+
+// 文件系统操作处理
+ipcMain.handle('fs:mkdir', (event, dirPath) => {
+  try {
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+    return true;
+  } catch (error) {
+    console.error('Error creating directory:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('fs:writeFile', (event, filePath, content) => {
+  try {
+    // 确保目录存在
+    const dirPath = path.dirname(filePath);
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+    fs.writeFileSync(filePath, content, 'utf8');
+    return true;
+  } catch (error) {
+    console.error('Error writing file:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('fs:rename', (event, oldPath, newPath) => {
+  try {
+    // 确保新路径的目录存在
+    const newDirPath = path.dirname(newPath);
+    if (!fs.existsSync(newDirPath)) {
+      fs.mkdirSync(newDirPath, { recursive: true });
+    }
+    fs.renameSync(oldPath, newPath);
+    return true;
+  } catch (error) {
+    console.error('Error renaming file:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('fs:rm', (event, filePath, options) => {
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.rmSync(filePath, options);
+    }
+    return true;
+  } catch (error) {
+    console.error('Error deleting file:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('fs:existsSync', (event, filePath) => {
+  try {
+    return fs.existsSync(filePath);
+  } catch (error) {
+    console.error('Error checking file existence:', error);
+    return false;
   }
 });
