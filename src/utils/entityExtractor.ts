@@ -161,34 +161,40 @@ function extractEntitiesFromFile(filePath: string): { entities: Entity[], relati
   }
   
   // 遍历技术术语库，查找匹配的实体
-  Object.entries(TECH_TERMS).forEach(([type, terms]) => {
-    terms.forEach(term => {
-      const escapedTerm = escapeRegExp(term);
-      const regex = new RegExp(`(${escapedTerm})`, 'gi');
-      const matches = fullContent.match(regex);
-      
-      if (matches) {
-        const id = term.toLowerCase().replace(/\s+/g, '-');
-        if (entityMap.has(id)) {
-          const entity = entityMap.get(id)!;
-          entity.occurrences += matches.length;
-          if (!entity.sources.includes(fileName)) {
-            entity.sources.push(fileName);
+      Object.entries(TECH_TERMS).forEach(([type, terms]) => {
+        terms.forEach(term => {
+          // 跳过单个字母的术语，避免抽取 C、R 等单个字母
+          if (term.length <= 1) {
+            return;
           }
-        } else {
-          const entity: Entity = {
-            id,
-            label: term,
-            type,
-            occurrences: matches.length,
-            sources: [fileName]
-          };
-          entityMap.set(id, entity);
-          entities.push(entity);
-        }
-      }
-    });
-  });
+          
+          const escapedTerm = escapeRegExp(term);
+          // 使用单词边界确保只匹配完整的单词
+          const regex = new RegExp(`\\b(${escapedTerm})\\b`, 'gi');
+          const matches = fullContent.match(regex);
+          
+          if (matches) {
+            const id = term.toLowerCase().replace(/\s+/g, '-');
+            if (entityMap.has(id)) {
+              const entity = entityMap.get(id)!;
+              entity.occurrences += matches.length;
+              if (!entity.sources.includes(fileName)) {
+                entity.sources.push(fileName);
+              }
+            } else {
+              const entity: Entity = {
+                id,
+                label: term,
+                type,
+                occurrences: matches.length,
+                sources: [fileName]
+              };
+              entityMap.set(id, entity);
+              entities.push(entity);
+            }
+          }
+        });
+      });
   
   // 提取关系（根据实体类型生成更有意义的关系类型）
   const relationships: Relationship[] = [];
