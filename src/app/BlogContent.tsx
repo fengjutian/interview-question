@@ -401,24 +401,7 @@ export default function BlogContent({ articles, articleContents, graphData, file
     
     return () => clearTimeout(timer);
   }, [searchTerm]);
-  
-  // 根据分类和搜索关键词筛选文章
-  const filteredArticles = articles.filter(article => {
-    const matchesCategory = selectedCategory === '全部' || article.category === selectedCategory;
-    const matchesSearch = !debouncedSearchTerm || 
-      article.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || 
-      article.summary.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      article.tags.some(tag => tag.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
-    return matchesCategory && matchesSearch;
-  });
-  
-  // 高亮显示搜索结果
-  const highlightSearchResults = (content: string) => {
-    if (!debouncedSearchTerm) return content;
-    
-    const regex = new RegExp(`(${debouncedSearchTerm})`, 'gi');
-    return content.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
-  };
+
 
   // 清除搜索
   const clearSearch = () => {
