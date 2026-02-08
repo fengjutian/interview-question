@@ -70,7 +70,7 @@ importers:
         specifier: ^10.1.0
         version: 10.1.0
       electron:
-        specifier: ^40.2.1
+        specifier: 40.2.1
         version: 40.2.1
       electron-builder:
         specifier: ^26.7.0
