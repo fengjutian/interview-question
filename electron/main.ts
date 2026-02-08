@@ -135,6 +135,48 @@ ipcMain.handle('fs:mkdir', (event, dirPath, options) => {
   }
 });
 
+ipcMain.handle('fs:readdir', (event, dirPath) => {
+  try {
+    if (fs.existsSync(dirPath)) {
+      return fs.readdirSync(dirPath);
+    }
+    return [];
+  } catch (error) {
+    console.error('Error reading directory:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('fs:stat', (event, filePath) => {
+  try {
+    if (fs.existsSync(filePath)) {
+      const stats = fs.statSync(filePath);
+      return {
+        isDirectory: stats.isDirectory(),
+        isFile: stats.isFile(),
+        size: stats.size,
+        mtime: stats.mtime
+      };
+    }
+    throw new Error('File not found');
+  } catch (error) {
+    console.error('Error getting file stats:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('fs:readFile', (event, filePath) => {
+  try {
+    if (fs.existsSync(filePath)) {
+      return fs.readFileSync(filePath, 'utf8');
+    }
+    throw new Error('File not found');
+  } catch (error) {
+    console.error('Error reading file:', error);
+    throw error;
+  }
+});
+
 // 应用程序操作处理
 ipcMain.handle('app:getPath', (event, name) => {
   try {

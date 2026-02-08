@@ -33,6 +33,21 @@ contextBridge.exposeInMainWorld('electron', {
       return new Promise((resolve, reject) => {
         ipcRenderer.invoke('fs:existsSync', path).then(resolve).catch(reject);
       });
+    },
+    readdir: (path) => {
+      return new Promise((resolve, reject) => {
+        ipcRenderer.invoke('fs:readdir', path).then(resolve).catch(reject);
+      });
+    },
+    stat: (path) => {
+      return new Promise((resolve, reject) => {
+        ipcRenderer.invoke('fs:stat', path).then(resolve).catch(reject);
+      });
+    },
+    readFile: (path) => {
+      return new Promise((resolve, reject) => {
+        ipcRenderer.invoke('fs:readFile', path).then(resolve).catch(reject);
+      });
     }
   },
   // 应用程序操作

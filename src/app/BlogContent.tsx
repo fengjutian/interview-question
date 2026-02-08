@@ -95,26 +95,9 @@ export default function BlogContent({ articles, articleContents, graphData, file
 
   // 获取 md 目录的绝对路径
   const getMdDirPath = async (): Promise<string> => {
-    if (typeof window !== 'undefined') {
-      // 浏览器环境或 Electron 环境
-      if (electronFs && window.electron && window.electron.app) {
-        // Electron 环境，使用用户数据目录
-        try {
-          const userDataDir = await window.electron.app.getPath('userData');
-          const mdDir = path.join(userDataDir, 'md');
-          return mdDir;
-        } catch (error) {
-          console.error('Error getting user data directory:', error);
-          // 如果获取用户数据目录失败，回退到当前工作目录
-          return path.join(process.cwd(), 'src', 'md');
-        }
-      }
-      // 浏览器环境
-      return '';
-    } else {
-      // Node.js 环境
-      return path.join(process.cwd(), 'src', 'md');
-    }
+    // 直接返回本地文件目录路径
+    const mdDir = path.join(process.cwd(), 'src', 'md');
+    return mdDir;
   };
 
   // 确保目录存在
@@ -142,12 +125,132 @@ export default function BlogContent({ articles, articleContents, graphData, file
     return path.join(mdDir, nodePath);
   };
 
+  // 从本地加载文件目录结构
+  const loadFileTreeFromLocal = async () => {
+    try {
+      const mdDir = await getMdDirPath();
+      console.log('Loading file tree from:', mdDir);
+      
+      // 递归读取目录结构
+      const readDirRecursive = async (dirPath: string, relativePath: string = ''): Promise<FileTreeNode[]> => {
+        const nodes: FileTreeNode[] = [];
+        
+        if (typeof window === 'undefined') {
+          // 服务器端环境
+          if (fs && fs.existsSync(dirPath)) {
+            const files = fs.readdirSync(dirPath);
+            for (const file of files) {
+              const fullPath = path.join(dirPath, file);
+              const stats = fs.statSync(fullPath);
+              const nodeRelativePath = relativePath ? `${relativePath}/${file}` : file;
+              
+              if (stats.isDirectory()) {
+                // 目录
+                const children = await readDirRecursive(fullPath, nodeRelativePath);
+                nodes.push({
+                  label: file,
+                  value: nodeRelativePath,
+                  key: `folder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                  children
+                });
+              } else if (stats.isFile() && file.endsWith('.md')) {
+                // Markdown 文件
+                nodes.push({
+                  label: file,
+                  value: nodeRelativePath,
+                  key: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+                });
+              }
+            }
+          }
+        } else if (electronFs) {
+          // Electron 环境
+          const exists = await electronFs.existsSync(dirPath);
+          if (exists) {
+            // 注意：electronFs 可能没有 readdir 方法，需要在 preload.js 中添加
+            // 这里假设已经添加了 readdir 方法
+            const files = await electronFs.readdir(dirPath);
+            for (const file of files) {
+              const fullPath = path.join(dirPath, file);
+              const stats = await electronFs.stat(fullPath);
+              const nodeRelativePath = relativePath ? `${relativePath}/${file}` : file;
+              
+              if (stats.isDirectory()) {
+                // 目录
+                const children = await readDirRecursive(fullPath, nodeRelativePath);
+                nodes.push({
+                  label: file,
+                  value: nodeRelativePath,
+                  key: `folder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                  children
+                });
+              } else if (stats.isFile() && file.endsWith('.md')) {
+                // Markdown 文件
+                nodes.push({
+                  label: file,
+                  value: nodeRelativePath,
+                  key: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+                });
+              }
+            }
+          }
+        }
+        
+        return nodes;
+      };
+      
+      const fileTree = await readDirRecursive(mdDir);
+      setTreeData(fileTree);
+      console.log('File tree loaded:', fileTree);
+    } catch (error) {
+      console.error('Error loading file tree:', error);
+    }
+  };
+
   // 同步目录树数据
   React.useEffect(() => {
     setTreeData(fileTreeData);
   }, [fileTreeData]);
+
+  // 组件挂载时从本地加载文件目录结构
+  React.useEffect(() => {
+    loadFileTreeFromLocal();
+  }, []);
   
-  const markdownContent = articleContents[selectedArticle.file];
+  // 状态管理：当前文件内容
+  const [currentFileContent, setCurrentFileContent] = useState('');
+
+  // 从本地加载文件内容
+  const loadFileContent = async (filePath: string) => {
+    try {
+      const mdDir = await getMdDirPath();
+      const fullPath = path.join(mdDir, filePath);
+      console.log('Loading file content from:', fullPath);
+      
+      let content = '';
+      if (typeof window === 'undefined') {
+        // 服务器端环境
+        if (fs && fs.existsSync(fullPath)) {
+          content = fs.readFileSync(fullPath, 'utf8');
+        }
+      } else if (electronFs) {
+        // Electron 环境
+        const exists = await electronFs.existsSync(fullPath);
+        if (exists) {
+          content = await electronFs.readFile(fullPath);
+        }
+      }
+      
+      setCurrentFileContent(content);
+      console.log('File content loaded successfully');
+    } catch (error) {
+      console.error('Error loading file content:', error);
+      setCurrentFileContent('');
+    }
+  };
+
+  // 使用当前文件内容或默认的文章内容
+  const markdownContent = currentFileContent || articleContents[selectedArticle.file];
   
   // 提取所有唯一的分类
   const categories = ['全部', ...Array.from(new Set(articles.map(article => article.category)))];
@@ -515,10 +618,13 @@ export default function BlogContent({ articles, articleContents, graphData, file
           const selectedNode = findNodeByKey(treeData);
           if (selectedNode && !selectedNode.children) {
             const selectedFilePath = selectedNode.value;
+            // 加载文件内容
+            loadFileContent(selectedFilePath);
+            
             // 标准化路径格式，确保与 articles 中的路径格式一致
-            const normalizedPath = selectedFilePath.replace(/\\/g, '/');
+            const normalizedPath = selectedFilePath.split('\\').join('/');
             const correspondingArticle = articles.find(article => {
-              const articleFileNormalized = article.file.replace(/\\/g, '/');
+              const articleFileNormalized = article.file.split('\\').join('/');
               return articleFileNormalized === normalizedPath;
             });
             if (correspondingArticle) {
