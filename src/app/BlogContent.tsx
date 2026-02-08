@@ -90,9 +90,7 @@ export default function BlogContent({ articles, articleContents, graphData, file
       return '';
     } else {
       // Node.js 环境
-      const __filename = fileURLToPath(import.meta.url);
-      const __dirname = path.dirname(__filename);
-      return path.join(__dirname, '..', '..', 'md');
+      return path.join(process.cwd(), 'src', 'md');
     }
   };
 
