@@ -1,3 +1,11 @@
+---
+title: Vue3 为什么 ref 要用 .value？
+tags: [Vue3, 组件]
+description: Vue3 为什么 ref 要用 .value？
+date: 2026-02-05
+category: Vue3
+---
+
 # 为什么 ref 要用 .value？
 
 Vue 3 中的 `ref` 是一个响应式引用，它需要使用 `.value` 来访问和修改其值，主要原因如下：
