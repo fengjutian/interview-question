@@ -74,26 +74,51 @@ const TECH_TERMS = {
   frameworks: [
     "qiankun",
     "React", "Vue", "Angular", "Next.js", "Nuxt.js", "Svelte", "Gatsby",
-    "Express", "Koa", "NestJS", "Fastify", "Flutter", "React Native"
+    "Express", "Koa", "NestJS", "Fastify", "Flutter", "React Native",
+    "Spring", "Django", "Flask", "Laravel", "Rails", "ASP.NET", "Symfony",
+    "Meteor", "Ember.js", "Backbone.js", "Preact", "Inferno", "Solid.js",
+    "Ionic", "NativeScript", "Xamarin", "Unity", "Unreal Engine"
   ],
   concepts: [
     "组件", "状态管理", "Props", "Hooks", "Ref", "Proxy", "defineProperty",
     "虚拟DOM", "Fiber", "JSX", "Redux", "Context API", "useState", "useEffect",
     "useContext", "useReducer", "useCallback", "useMemo", "useRef", "useLayoutEffect",
     "自定义Hook", "高阶组件", "Render Props", "Error Boundary", "Portal",
-    "Suspense", "Concurrent Mode", "Server Components"
+    "Suspense", "Concurrent Mode", "Server Components", "Code Splitting", "Lazy Loading",
+    "Tree Shaking", "Hot Module Replacement", "Server-Side Rendering", "Static Site Generation",
+    "Incremental Static Regeneration", "Progressive Web App", "Single Page Application",
+    "Multi Page Application", "Micro Frontends", "BFF Pattern", "API Gateway",
+    "Circuit Breaker", "Rate Limiting", "CORS", "CSRF", "XSS", "SQL Injection",
+    "Authentication", "Authorization", "Session Management", "JWT", "OAuth", "OpenID Connect"
   ],
   languages: [
     "JavaScript", "TypeScript", "Java", "Python", "C++", "C#", "Go", "Rust",
-    "PHP", "Ruby", "Swift", "Kotlin", "Dart", "HTML", "CSS", "SCSS", "Less"
+    "PHP", "Ruby", "Swift", "Kotlin", "Dart", "HTML", "CSS", "SCSS", "Less",
+    "C", "Objective-C", "Perl", "Shell", "PowerShell", "R", "Matlab", "Scala",
+    "Groovy", "Clojure", "Haskell", "Erlang", "Elixir", "Lua", "Julia", "Crystal",
+    "Zig", "WebAssembly", "XML", "JSON", "YAML", "TOML", "Markdown", "GraphQL",
+    "SQL", "NoSQL", "MongoDB Query Language", "Redis Commands"
   ],
   tools: [
     "Webpack", "Vite", "Rollup", "Babel", "ESLint", "Prettier", "Jest",
-    "Testing Library", "Cypress", "Playwright", "Docker", "Git", "npm", "yarn", "pnpm"
+    "Testing Library", "Cypress", "Playwright", "Docker", "Git", "npm", "yarn", "pnpm",
+    "ESBuild", "SWC", "Parcel", "Turborepo", "Lerna", "NX", "Rush",
+    "Mocha", "Chai", "Sinon", "Jasmine", "Karma", "AVA", "Tap", "QUnit",
+    "Storybook", "Lerna", "NX", "Rush", "Docker Compose", "Kubernetes", "Minikube",
+    "Kind", "Helm", "Terraform", "Ansible", "Chef", "Puppet", "SaltStack",
+    "Jenkins", "Travis CI", "CircleCI", "GitHub Actions", "GitLab CI", "Bitbucket Pipelines",
+    "AWS CodePipeline", "Azure DevOps", "Google Cloud Build", "SonarQube", "Snyk",
+    "Datadog", "New Relic", "Prometheus", "Grafana", "ELK Stack", "Loki", "Jaeger", "Zipkin"
   ],
   patterns: [
     "单例模式", "工厂模式", "观察者模式", "发布订阅模式", "装饰器模式",
-    "适配器模式", "策略模式", "模板方法模式", "责任链模式", "命令模式"
+    "适配器模式", "策略模式", "模板方法模式", "责任链模式", "命令模式",
+    "原型模式", "建造者模式", "抽象工厂模式", "桥接模式", "组合模式",
+    "外观模式", "享元模式", "中介者模式", "备忘录模式", "状态模式",
+    "访问者模式", "解释器模式", "迭代器模式", "空对象模式", "代理模式",
+    "依赖注入", "控制反转", "面向切面编程", "领域驱动设计", "事件溯源",
+    "CQRS", "微服务架构", "单体架构", "分层架构", "六边形架构",
+    "洋葱架构", "清洁架构", "管道过滤器模式", "主从模式", "领导者跟随者模式"
   ]
 };
 
