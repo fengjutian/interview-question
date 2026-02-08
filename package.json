@@ -6,35 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "electron:dev": "concurrently \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
-    "electron:build": "npm run build && electron-builder",
-    "electron:dist": "npm run build && electron-builder --win --mac --linux"
-  },
-  "main": "electron/main.ts",
-  "build": {
-    "appId": "com.interview.question",
-    "productName": "知识点分析系统",
-    "directories": {
-      "output": "dist",
-      "buildResources": "electron/resources"
-    },
-    "files": [
-      "electron/**/*",
-      "out/**/*"
-    ],
-    "win": {
-      "target": "nsis",
-      "icon": "electron/resources/icon.ico"
-    },
-    "mac": {
-      "target": "dmg",
-      "icon": "electron/resources/icon.icns"
-    },
-    "linux": {
-      "target": "AppImage",
-      "icon": "electron/resources/icon.png"
-    }
+    "lint": "eslint"
   },
   "dependencies": {
     "@douyinfe/semi-icons": "^2.90.13",
@@ -57,14 +29,9 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "concurrently": "^9.2.1",
-    "cross-env": "^10.1.0",
-    "electron": "^40.2.1",
-    "electron-builder": "^26.7.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.5",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "wait-on": "^9.0.3"
+    "typescript": "^5"
   }
 }
