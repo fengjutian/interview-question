@@ -144,7 +144,7 @@ export default function BlogContent({ articles, articleContents, graphData, file
               const stats = fs.statSync(fullPath);
               const nodeRelativePath = relativePath ? `${relativePath}/${file}` : file;
               
-              if (stats.isDirectory()) {
+              if (stats.isDirectory) {
                 // 目录
                 const children = await readDirRecursive(fullPath, nodeRelativePath);
                 nodes.push({
@@ -153,7 +153,7 @@ export default function BlogContent({ articles, articleContents, graphData, file
                   key: `folder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                   children
                 });
-              } else if (stats.isFile() && file.endsWith('.md')) {
+              } else if (stats.isFile && file.endsWith('.md')) {
                 // Markdown 文件
                 nodes.push({
                   label: file,
@@ -175,7 +175,7 @@ export default function BlogContent({ articles, articleContents, graphData, file
               const stats = await electronFs.stat(fullPath);
               const nodeRelativePath = relativePath ? `${relativePath}/${file}` : file;
               
-              if (stats.isDirectory()) {
+              if (stats.isDirectory) {
                 // 目录
                 const children = await readDirRecursive(fullPath, nodeRelativePath);
                 nodes.push({
@@ -184,7 +184,7 @@ export default function BlogContent({ articles, articleContents, graphData, file
                   key: `folder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                   children
                 });
-              } else if (stats.isFile() && file.endsWith('.md')) {
+              } else if (stats.isFile && file.endsWith('.md')) {
                 // Markdown 文件
                 nodes.push({
                   label: file,

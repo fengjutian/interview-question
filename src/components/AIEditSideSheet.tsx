@@ -16,26 +16,82 @@ export const AIEditSideSheet: React.FC<AIEditSideSheetProps> = ({ visible, onClo
   const [error, setError] = useState('');
   const [relevantDocs, setRelevantDocs] = useState<string[]>([]);
 
-  // 模拟文档检索函数（RAG 中的 Retrieval 部分）
-  const retrieveRelevantDocs = (query: string): string[] => {
-    // 这里应该是实际的文档检索逻辑
-    // 为了演示，返回一些模拟的相关文档
-    const docs = [
-      'React 是一个用于构建用户界面的 JavaScript 库。',
-      'Next.js 是一个基于 React 的框架，用于构建全栈应用。',
-      'Electron 是一个用于构建跨平台桌面应用的框架。',
-      'Markdown 是一种轻量级标记语言，易于阅读和编写。',
-      'Tailwind CSS 是一个实用优先的 CSS 框架。'
-    ];
-    
-    // 简单的关键词匹配，实际应用中可能会使用更复杂的算法
-    const matchedDocs = docs.filter(doc => 
-      doc.toLowerCase().includes(query.toLowerCase())
-    );
-    
-    // 如果没有匹配到相关文档，返回所有文档作为默认值
-    // 这样可以确保即使没有匹配到相关文档，API 调用也能正常工作
-    return matchedDocs.length > 0 ? matchedDocs : docs;
+  // 从本地 md 目录获取文档内容（RAG 中的 Retrieval 部分）
+  const retrieveRelevantDocs = async (query: string): Promise<string[]> => {
+    // 默认文档，用于非 Electron 环境或读取失败时
+    const defaultDocs = [];
+
+    // 检查是否在 Electron 环境中
+    if (typeof window !== 'undefined' && (window as any).electronFs) {
+      try {
+        const electronFs = (window as any).electronFs;
+        const mdDir = 'c:\\Users\\26401\\interview-question\\src\\md';
+        
+        // 检查目录是否存在
+        const dirExists = await electronFs.existsSync(mdDir);
+        if (!dirExists) {
+          console.warn('md 目录不存在:', mdDir);
+          return defaultDocs;
+        }
+
+        // 读取目录内容
+        const files = await electronFs.readdirSync(mdDir);
+        const docs: string[] = [];
+
+        // 递归读取文件内容
+        const readFilesRecursive = async (dirPath: string) => {
+          const items = await electronFs.readdirSync(dirPath);
+          for (const item of items) {
+            const itemPath = `${dirPath}\\${item}`;
+            const stats = await electronFs.statSync(itemPath);
+            
+            if (stats.isDirectory()) {
+              // 如果是目录，递归读取
+              await readFilesRecursive(itemPath);
+            } else if (item.endsWith('.md')) {
+              // 如果是 Markdown 文件，读取内容
+              const content = await electronFs.readFile(itemPath);
+              // 提取文件中的文本内容，用于关键词匹配
+              // 简单处理：移除 Markdown 标记，提取纯文本
+              const plainText = content
+                .replace(/^#.*$/gm, '') // 移除标题
+                .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // 移除链接，保留文本
+                .replace(/```[\s\S]*?```/g, '') // 移除代码块
+                .replace(/\*\*([^*]+)\*\*/g, '$1') // 移除粗体
+                .replace(/\*([^*]+)\*/g, '$1') // 移除斜体
+                .replace(/^-\s+/gm, '') // 移除列表标记
+                .trim();
+              
+              // 只添加有内容的文件
+              if (plainText.length > 0) {
+                docs.push(plainText.substring(0, 500)); // 限制长度，避免内容过长
+              }
+            }
+          }
+        };
+
+        // 开始递归读取文件
+        await readFilesRecursive(mdDir);
+
+        // 如果读取到了文档，进行关键词匹配
+        if (docs.length > 0) {
+          const matchedDocs = docs.filter(doc => 
+            doc.toLowerCase().includes(query.toLowerCase())
+          );
+          return matchedDocs.length >= 3 ? matchedDocs : docs;
+        } else {
+          // 如果没有读取到文档，返回默认文档
+          return defaultDocs;
+        }
+      } catch (error) {
+        console.error('读取本地文档失败:', error);
+        // 读取失败时返回默认文档
+        return defaultDocs;
+      }
+    } else {
+      // 非 Electron 环境，返回默认文档
+      return defaultDocs;
+    }
   };
 
   // 调用 DeepSeek API 生成内容（RAG 中的 Generation 部分）
@@ -51,7 +107,7 @@ export const AIEditSideSheet: React.FC<AIEditSideSheetProps> = ({ visible, onClo
 
     try {
       // 1. 检索相关文档
-      const docs = retrieveRelevantDocs(userInput);
+      const docs = await retrieveRelevantDocs(userInput);
       setRelevantDocs(docs);
 
       // 2. 构建 RAG 提示
