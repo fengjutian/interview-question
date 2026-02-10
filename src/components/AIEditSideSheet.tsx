@@ -29,9 +29,13 @@ export const AIEditSideSheet: React.FC<AIEditSideSheetProps> = ({ visible, onClo
     ];
     
     // 简单的关键词匹配，实际应用中可能会使用更复杂的算法
-    return docs.filter(doc => 
+    const matchedDocs = docs.filter(doc => 
       doc.toLowerCase().includes(query.toLowerCase())
     );
+    
+    // 如果没有匹配到相关文档，返回所有文档作为默认值
+    // 这样可以确保即使没有匹配到相关文档，API 调用也能正常工作
+    return matchedDocs.length > 0 ? matchedDocs : docs;
   };
 
   // 调用 DeepSeek API 生成内容（RAG 中的 Generation 部分）
@@ -63,16 +67,52 @@ export const AIEditSideSheet: React.FC<AIEditSideSheetProps> = ({ visible, onClo
       `;
 
       // 3. 调用 DeepSeek API
-      // 注意：这里需要替换为实际的 DeepSeek API 调用
-      // 由于是演示，我们使用模拟数据
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 模拟网络延迟
+      // 注意：在 Next.js 中，客户端组件需要使用 NEXT_PUBLIC_ 前缀才能访问环境变量
+      // 检查是否存在 NEXT_PUBLIC_DEEPSEEK_API_KEY（客户端可访问）
+      const apiKey = process.env.NEXT_PUBLIC_DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY || '';
+      
+      if (!apiKey) {
+        throw new Error('请设置 DEEPSEEK_API_KEY 或 NEXT_PUBLIC_DEEPSEEK_API_KEY 环境变量');
+      }
 
-      // 模拟生成的内容
-      const mockGeneratedContent = `根据文档内容，关于 "${userInput}" 的回答：\n\n${docs[0]}\n\n这是一个基于 DeepSeek API 生成的回答，结合了检索到的相关文档信息。`;
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            {
+              role: 'system',
+              content: '你是一个帮助用户编辑和优化 Markdown 内容的 AI 助手。'
+            },
+            {
+              role: 'user',
+              content: ragPrompt
+            }
+          ],
+          stream: false
+        })
+      });
 
-      setGeneratedContent(mockGeneratedContent);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `API 调用失败: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const generatedContent = data.choices?.[0]?.message?.content || '';
+
+      if (!generatedContent) {
+        throw new Error('API 返回内容为空');
+      }
+
+      setGeneratedContent(generatedContent);
     } catch (err) {
-      setError('生成内容时出错，请稍后重试');
+      const errorMessage = err instanceof Error ? err.message : '生成内容时出错，请稍后重试';
+      setError(errorMessage);
       console.error('Error generating content:', err);
     } finally {
       setLoading(false);
@@ -92,7 +132,6 @@ export const AIEditSideSheet: React.FC<AIEditSideSheetProps> = ({ visible, onClo
 
         {/* 用户输入区域 */}
         <div>
-          <h4 className="text-md font-medium mb-2">请输入你的问题：</h4>
           <TextArea
             value={userInput}
             onChange={(value) => setUserInput(value)}
