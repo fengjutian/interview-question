@@ -23,6 +23,21 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, the
     }
   };
 
+  // 移除 Markdown 文件开头的元数据部分
+  const removeMetadata = (content: string): string => {
+    // 检查内容是否以 --- 开头
+    if (content.startsWith('---')) {
+      // 找到第二个 --- 的位置
+      const endOfMetadataIndex = content.indexOf('---', 3);
+      if (endOfMetadataIndex !== -1) {
+        // 移除元数据部分，返回剩余内容
+        return content.substring(endOfMetadataIndex + 3).trim();
+      }
+    }
+    // 如果没有元数据，直接返回原内容
+    return content;
+  };
+
   // 高亮显示搜索结果
   const highlightSearchResults = (text: string) => {
     if (!searchTerm) return text;
@@ -166,7 +181,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, the
         rehypePlugins={[rehypeHighlight]} 
         components={components}
       >
-        {content}
+        {removeMetadata(content)}
       </ReactMarkdown>
     </div>
   );

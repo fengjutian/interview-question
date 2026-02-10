@@ -95,8 +95,10 @@ export default function BlogContent({ articles, articleContents, graphData, file
 
   // 获取 md 目录的绝对路径
   const getMdDirPath = async (): Promise<string> => {
-    // 直接返回本地文件目录路径
+    // 直接返回项目根目录下的 src/md 路径
+    // 确保在所有环境中都使用正确的相对路径
     const mdDir = path.join(process.cwd(), 'src', 'md');
+    console.log('Using md directory:', mdDir);
     return mdDir;
   };
 
@@ -118,7 +120,8 @@ export default function BlogContent({ articles, articleContents, graphData, file
 
   // 获取节点对应的文件系统路径
   const getNodePath = async (node: FileTreeNode): Promise<string> => {
-    const mdDir = await getMdDirPath();
+    // 直接使用固定的 md 目录路径，确保构建正确的文件路径
+    const mdDir = 'C:\\Users\\26401\\interview-question\\src\\md';
     if (!mdDir) return '';
     // 构建完整路径
     const nodePath = node.value;
@@ -128,7 +131,8 @@ export default function BlogContent({ articles, articleContents, graphData, file
   // 从本地加载文件目录结构
   const loadFileTreeFromLocal = async () => {
     try {
-      const mdDir = await getMdDirPath();
+      // 直接使用固定的 md 目录路径，确保加载正确的目录
+      const mdDir = 'C:\\Users\\26401\\interview-question\\src\\md';
       console.log('Loading file tree from:', mdDir);
       
       // 递归读取目录结构
@@ -144,16 +148,19 @@ export default function BlogContent({ articles, articleContents, graphData, file
               const stats = fs.statSync(fullPath);
               const nodeRelativePath = relativePath ? `${relativePath}/${file}` : file;
               
-              if (stats.isDirectory) {
+              if (stats.isDirectory()) {
                 // 目录
                 const children = await readDirRecursive(fullPath, nodeRelativePath);
-                nodes.push({
-                  label: file,
-                  value: nodeRelativePath,
-                  key: `folder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                  children
-                });
-              } else if (stats.isFile && file.endsWith('.md')) {
+                // 只有当目录中有子节点（文件或子目录）时，才将该目录添加到树数据中
+                if (children.length > 0) {
+                  nodes.push({
+                    label: file,
+                    value: nodeRelativePath,
+                    key: `folder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    children
+                  });
+                }
+              } else if (stats.isFile() && file.endsWith('.md')) {
                 // Markdown 文件
                 nodes.push({
                   label: file,
@@ -178,12 +185,15 @@ export default function BlogContent({ articles, articleContents, graphData, file
               if (stats.isDirectory) {
                 // 目录
                 const children = await readDirRecursive(fullPath, nodeRelativePath);
-                nodes.push({
-                  label: file,
-                  value: nodeRelativePath,
-                  key: `folder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                  children
-                });
+                // 只有当目录中有子节点（文件或子目录）时，才将该目录添加到树数据中
+                if (children.length > 0) {
+                  nodes.push({
+                    label: file,
+                    value: nodeRelativePath,
+                    key: `folder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    children
+                  });
+                }
               } else if (stats.isFile && file.endsWith('.md')) {
                 // Markdown 文件
                 nodes.push({
@@ -223,7 +233,8 @@ export default function BlogContent({ articles, articleContents, graphData, file
   // 从本地加载文件内容
   const loadFileContent = async (filePath: string) => {
     try {
-      const mdDir = await getMdDirPath();
+      // 直接使用固定的 md 目录路径，确保加载正确的文件
+      const mdDir = 'C:\\Users\\26401\\interview-question\\src\\md';
       const fullPath = path.join(mdDir, filePath);
       console.log('Loading file content from:', fullPath);
       
@@ -285,7 +296,8 @@ export default function BlogContent({ articles, articleContents, graphData, file
       }
 
       // 执行文件系统操作
-      const mdDir = await getMdDirPath();
+      // 直接使用固定的 md 目录路径，确保创建正确的文件夹
+      const mdDir = 'C:\\Users\\26401\\interview-question\\src\\md';
       let folderPath = '';
       
       if (parentKey === null) {
@@ -350,7 +362,8 @@ export default function BlogContent({ articles, articleContents, graphData, file
       }
 
       // 执行文件系统操作
-      const mdDir = await getMdDirPath();
+      // 直接使用固定的 md 目录路径，确保创建正确的文件
+      const mdDir = 'C:\\Users\\26401\\interview-question\\src\\md';
       let filePath = '';
       
       if (parentKey === null) {
