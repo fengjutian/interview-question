@@ -3,7 +3,7 @@ title: React 虚拟DOM 详解
 category: React
 tags: [React, 虚拟DOM, 渲染流程]
 description: React 虚拟DOM详解，包括虚拟DOM的定义、工作原理以及React组件的渲染流程
-date: 2026-02-05
+date: 2026-02-10
 ---
 
 ## 虚拟DOM是什么？解释其工作原理
