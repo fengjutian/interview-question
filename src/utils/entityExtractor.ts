@@ -69,57 +69,18 @@ export interface GraphData {
   }>;
 }
 
-// 技术术语库
-const TECH_TERMS = {
-  frameworks: [
-    "qiankun",
-    "React", "Vue", "Angular", "Next.js", "Nuxt.js", "Svelte", "Gatsby",
-    "Express", "Koa", "NestJS", "Fastify", "Flutter", "React Native",
-    "Spring", "Django", "Flask", "Laravel", "Rails", "ASP.NET", "Symfony",
-    "Meteor", "Ember.js", "Backbone.js", "Preact", "Inferno", "Solid.js",
-    "Ionic", "NativeScript", "Xamarin", "Unity", "Unreal Engine"
-  ],
-  concepts: [
-    "组件", "状态管理", "Props", "Hooks", "Ref", "Proxy", "defineProperty",
-    "虚拟DOM", "Fiber", "JSX", "Redux", "Context API", "useState", "useEffect",
-    "useContext", "useReducer", "useCallback", "useMemo", "useRef", "useLayoutEffect",
-    "自定义Hook", "高阶组件", "Render Props", "Error Boundary", "Portal",
-    "Suspense", "Concurrent Mode", "Server Components", "Code Splitting", "Lazy Loading",
-    "Tree Shaking", "Hot Module Replacement", "Server-Side Rendering", "Static Site Generation",
-    "Incremental Static Regeneration", "Progressive Web App", "Single Page Application",
-    "Multi Page Application", "Micro Frontends", "BFF Pattern", "API Gateway",
-    "Circuit Breaker", "Rate Limiting", "CORS", "CSRF", "XSS", "SQL Injection",
-    "Authentication", "Authorization", "Session Management", "JWT", "OAuth", "OpenID Connect"
-  ],
-  languages: [
-    "JavaScript", "TypeScript", "Java", "Python", "C++", "C#", "Go", "Rust",
-    "PHP", "Ruby", "Swift", "Kotlin", "Dart", "HTML", "CSS", "SCSS", "Less",
-    "C", "Objective-C", "Perl", "Shell", "PowerShell", "R", "Matlab", "Scala",
-    "Groovy", "Clojure", "Haskell", "Erlang", "Elixir", "Lua", "Julia", "Crystal",
-    "Zig", "WebAssembly", "XML", "JSON", "YAML", "TOML", "Markdown", "GraphQL",
-    "SQL", "NoSQL", "MongoDB Query Language", "Redis Commands"
-  ],
-  tools: [
-    "Webpack", "Vite", "Rollup", "Babel", "ESLint", "Prettier", "Jest",
-    "Testing Library", "Cypress", "Playwright", "Docker", "Git", "npm", "yarn", "pnpm",
-    "ESBuild", "SWC", "Parcel", "Turborepo", "Lerna", "NX", "Rush",
-    "Mocha", "Chai", "Sinon", "Jasmine", "Karma", "AVA", "Tap", "QUnit",
-    "Storybook", "Lerna", "NX", "Rush", "Docker Compose", "Kubernetes", "Minikube",
-    "Kind", "Helm", "Terraform", "Ansible", "Chef", "Puppet", "SaltStack",
-    "Jenkins", "Travis CI", "CircleCI", "GitHub Actions", "GitLab CI", "Bitbucket Pipelines",
-    "AWS CodePipeline", "Azure DevOps", "Google Cloud Build", "SonarQube", "Snyk",
-    "Datadog", "New Relic", "Prometheus", "Grafana", "ELK Stack", "Loki", "Jaeger", "Zipkin"
-  ],
-  patterns: [
-    "单例模式", "工厂模式", "观察者模式", "发布订阅模式", "装饰器模式",
-    "适配器模式", "策略模式", "模板方法模式", "责任链模式", "命令模式",
-    "原型模式", "建造者模式", "抽象工厂模式", "桥接模式", "组合模式",
-    "外观模式", "享元模式", "中介者模式", "备忘录模式", "状态模式",
-    "访问者模式", "解释器模式", "迭代器模式", "空对象模式", "代理模式",
-    "依赖注入", "控制反转", "面向切面编程", "领域驱动设计", "事件溯源",
-    "CQRS", "微服务架构", "单体架构", "分层架构", "六边形架构",
-    "洋葱架构", "清洁架构", "管道过滤器模式", "主从模式", "领导者跟随者模式"
-  ]
+// 从Markdown文件中提取技术术语的规则
+const TECH_TERM_RULES = {
+  // 框架和库：通常是大写开头的单词，可能包含连字符或点，且长度至少为2
+  frameworks: /\b([A-Z][a-zA-Z0-9]{2,}(-[A-Z][a-zA-Z0-9]+)*)(\.[a-zA-Z0-9]+)?\b/g,
+  // 概念：可能是中文词汇（长度至少为2）或英文术语（多个大写单词组成）
+  concepts: /\b([\u4e00-\u9fa5]{2,}|[A-Z][a-zA-Z0-9]+(\s+[A-Z][a-zA-Z0-9]+){1,})\b/g,
+  // 编程语言：通常是大写开头的单词，可能包含加号或井号，且长度至少为2
+  languages: /\b([A-Z][a-zA-Z0-9]{2,}([+#][a-zA-Z0-9]*)?)\b/g,
+  // 工具：通常是大写开头的单词，可能包含连字符，且长度至少为2
+  tools: /\b([A-Z][a-zA-Z0-9]{2,}(-[A-Z][a-zA-Z0-9]+)+)\b/g,
+  // 设计模式：通常是中文词汇，以"模式"结尾，且前面至少有2个汉字
+  patterns: /\b([\u4e00-\u9fa5]{2,}模式)\b/g
 };
 
 // 递归读取目录中的所有Markdown文件
@@ -155,46 +116,72 @@ function extractEntitiesFromFile(filePath: string): { entities: Entity[], relati
   const entities: Entity[] = [];
   const entityMap = new Map<string, Entity>();
   
-  // 转义正则表达式中的特殊字符
-  function escapeRegExp(string: string): string {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-  
-  // 遍历技术术语库，查找匹配的实体
-      Object.entries(TECH_TERMS).forEach(([type, terms]) => {
-        terms.forEach(term => {
-          // 跳过单个字母的术语，避免抽取 C、R 等单个字母
-          if (term.length <= 1) {
-            return;
-          }
-          
-          const escapedTerm = escapeRegExp(term);
-          // 使用单词边界确保只匹配完整的单词
-          const regex = new RegExp(`\\b(${escapedTerm})\\b`, 'gi');
-          const matches = fullContent.match(regex);
-          
-          if (matches) {
-            const id = term.toLowerCase().replace(/\s+/g, '-');
-            if (entityMap.has(id)) {
-              const entity = entityMap.get(id)!;
-              entity.occurrences += matches.length;
-              if (!entity.sources.includes(fileName)) {
-                entity.sources.push(fileName);
-              }
-            } else {
-              const entity: Entity = {
-                id,
-                label: term,
-                type,
-                occurrences: matches.length,
-                sources: [fileName]
-              };
-              entityMap.set(id, entity);
-              entities.push(entity);
-            }
-          }
-        });
-      });
+  // 遍历技术术语规则，使用正则表达式提取术语
+  Object.entries(TECH_TERM_RULES).forEach(([type, regex]) => {
+    // 重置正则表达式的lastIndex
+    regex.lastIndex = 0;
+    let match;
+    
+    // 查找所有匹配的术语
+    while ((match = regex.exec(fullContent)) !== null) {
+      const term = match[0];
+      
+      // 跳过单个字母的术语，避免抽取 C、R 等单个字母
+      if (term.length <= 1) {
+        continue;
+      }
+      
+      // 跳过数字
+      if (/^\d+$/.test(term)) {
+        continue;
+      }
+      
+      // 跳过常见的非技术词汇
+      const commonWords = ['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'of', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'will', 'would', 'shall', 'should', 'can', 'could', 'may', 'might', 'must', 'ought', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'this', 'that', 'these', 'those', 'what', 'which', 'who', 'whom', 'whose', 'why', 'how', 'where', 'when'];
+      if (commonWords.includes(term.toLowerCase())) {
+        continue;
+      }
+      
+      // 跳过单个字母的英文单词
+      if (/^[a-zA-Z]$/.test(term)) {
+        continue;
+      }
+      
+      // 跳过纯数字和日期格式
+      if (/^\d+(\.\d+)?$/.test(term) || /^\d{4}[-/\.]\d{1,2}[-/\.]\d{1,2}$/.test(term)) {
+        continue;
+      }
+      
+      // 跳过邮箱地址和URL
+      if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(term) || /^https?:\/\//.test(term)) {
+        continue;
+      }
+      
+      // 跳过文件路径和文件名
+      if (/^([a-zA-Z]:)?(\\|\/)[^\\/]+(\\|\/)[^\\/]+$/.test(term) || /^[^\\/]+\.[a-zA-Z0-9]+$/.test(term)) {
+        continue;
+      }
+      
+      const id = term.toLowerCase().replace(/\s+/g, '-');
+      if (entityMap.has(id)) {
+        const entity = entityMap.get(id)!;
+        entity.occurrences += 1;
+        if (!entity.sources.includes(fileName)) {
+          entity.sources.push(fileName);
+        }
+      } else {
+        const entity: Entity = {
+          id,
+          label: term,
+          type,
+          occurrences: 1,
+          sources: [fileName]
+        };
+        entityMap.set(id, entity);
+        entities.push(entity);
+      }
+    }
+  });
   
   // 提取关系（根据实体类型生成更有意义的关系类型）
   const relationships: Relationship[] = [];
