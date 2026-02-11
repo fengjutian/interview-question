@@ -68,7 +68,9 @@ export const FileTree: React.FC<FileTreeProps> = ({
         directory={true} 
         style={{ 
           width: '100%', 
-          height: 'calc(100vh-200px)', 
+          height: '600px', 
+          maxHeight: 'calc(100vh - 200px)', 
+          overflowY: 'auto', 
           border: '1px solid var(--semi-color-border)' 
         } as any} 
         onSelect={(selectedKey: string, selected: boolean) => {

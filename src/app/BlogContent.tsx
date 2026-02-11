@@ -608,45 +608,47 @@ export default function BlogContent({ articles, articleContents, graphData, file
   return (
     <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-120px)]">
       {/* 左侧目录树 - 仅在屏幕宽度足够时显示 */}
-      <div className="hidden lg:block">
-        <FileTree 
-          treeData={treeData}
-          onAddRootFolder={() => openDialog('addRootFolder')}
-          onAddFolder={(parentKey) => openDialog('addFolder', parentKey)}
-          onAddFile={(parentKey) => openDialog('addFile', parentKey)}
-          onDelete={deleteNode}
-          onRename={(key, label) => openDialog('rename', key, label)}
-          onSelect={(selectedKey) => {
-            const findNodeByKey = (nodes: FileTreeNode[]): FileTreeNode | null => {
-              for (const node of nodes) {
-                if (node.key === selectedKey) {
-                  return node;
+      <div className="hidden lg:block h-full flex-shrink-0">
+        <div className="h-full overflow-y-auto">
+          <FileTree 
+            treeData={treeData}
+            onAddRootFolder={() => openDialog('addRootFolder')}
+            onAddFolder={(parentKey) => openDialog('addFolder', parentKey)}
+            onAddFile={(parentKey) => openDialog('addFile', parentKey)}
+            onDelete={deleteNode}
+            onRename={(key, label) => openDialog('rename', key, label)}
+            onSelect={(selectedKey) => {
+              const findNodeByKey = (nodes: FileTreeNode[]): FileTreeNode | null => {
+                for (const node of nodes) {
+                  if (node.key === selectedKey) {
+                    return node;
+                  }
+                  if (node.children) {
+                    const found = findNodeByKey(node.children);
+                    if (found) return found;
+                  }
                 }
-                if (node.children) {
-                  const found = findNodeByKey(node.children);
-                  if (found) return found;
+                return null;
+              };
+              const selectedNode = findNodeByKey(treeData);
+              if (selectedNode && !selectedNode.children) {
+                const selectedFilePath = selectedNode.value;
+                // 加载文件内容
+                loadFileContent(selectedFilePath);
+                
+                // 标准化路径格式，确保与 articles 中的路径格式一致
+                const normalizedPath = selectedFilePath.split('\\').join('/');
+                const correspondingArticle = articles.find(article => {
+                  const articleFileNormalized = article.file.split('\\').join('/');
+                  return articleFileNormalized === normalizedPath;
+                });
+                if (correspondingArticle) {
+                  setSelectedArticle(correspondingArticle);
                 }
               }
-              return null;
-            };
-            const selectedNode = findNodeByKey(treeData);
-            if (selectedNode && !selectedNode.children) {
-              const selectedFilePath = selectedNode.value;
-              // 加载文件内容
-              loadFileContent(selectedFilePath);
-              
-              // 标准化路径格式，确保与 articles 中的路径格式一致
-              const normalizedPath = selectedFilePath.split('\\').join('/');
-              const correspondingArticle = articles.find(article => {
-                const articleFileNormalized = article.file.split('\\').join('/');
-                return articleFileNormalized === normalizedPath;
-              });
-              if (correspondingArticle) {
-                setSelectedArticle(correspondingArticle);
-              }
-            }
-          }}
-        />
+            }}
+          />
+        </div>
       </div>
         <Modal
           title={dialogLabel}
