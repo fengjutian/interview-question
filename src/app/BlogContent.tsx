@@ -95,10 +95,15 @@ export default function BlogContent({ articles, articleContents, graphData, file
 
   // 获取 md 目录的绝对路径
   const getMdDirPath = async (): Promise<string> => {
-    // 直接返回项目根目录下的 src/md 路径
-    // 确保在所有环境中都使用正确的相对路径
+    // 在 Electron 环境中使用固定的直接地址
+    if (typeof window !== 'undefined' && electronFs) {
+      const mdDir = 'C:\\Users\\26401\\interview-question\\src\\md';
+      console.log('Using electron md directory:', mdDir);
+      return mdDir;
+    }
+    // 在其他环境中使用 process.cwd() 构建路径
     const mdDir = path.join(process.cwd(), 'src', 'md');
-    console.log('Using md directory:', mdDir);
+    console.log('Using default md directory:', mdDir);
     return mdDir;
   };
 
@@ -120,8 +125,8 @@ export default function BlogContent({ articles, articleContents, graphData, file
 
   // 获取节点对应的文件系统路径
   const getNodePath = async (node: FileTreeNode): Promise<string> => {
-    // 直接使用固定的 md 目录路径，确保构建正确的文件路径
-    const mdDir = 'C:\\Users\\26401\\interview-question\\src\\md';
+    // 使用 getMdDirPath 函数获取正确的 md 目录路径
+    const mdDir = await getMdDirPath();
     if (!mdDir) return '';
     // 构建完整路径
     const nodePath = node.value;
@@ -131,8 +136,8 @@ export default function BlogContent({ articles, articleContents, graphData, file
   // 从本地加载文件目录结构
   const loadFileTreeFromLocal = async () => {
     try {
-      // 直接使用固定的 md 目录路径，确保加载正确的目录
-      const mdDir = 'C:\\Users\\26401\\interview-question\\src\\md';
+      // 使用 getMdDirPath 函数获取正确的 md 目录路径
+      const mdDir = await getMdDirPath();
       console.log('Loading file tree from:', mdDir);
       
       // 递归读取目录结构
@@ -204,6 +209,11 @@ export default function BlogContent({ articles, articleContents, graphData, file
               }
             }
           }
+        } else {
+          // 浏览器环境
+          // 浏览器环境不能直接访问本地文件系统，返回空数组
+          // 或者可以返回一些模拟数据，以便在浏览器中也能看到一些内容
+          console.log('Browser environment: Cannot access local file system');
         }
         
         return nodes;
@@ -217,11 +227,6 @@ export default function BlogContent({ articles, articleContents, graphData, file
     }
   };
 
-  // 同步目录树数据
-  React.useEffect(() => {
-    setTreeData(fileTreeData);
-  }, [fileTreeData]);
-
   // 组件挂载时从本地加载文件目录结构
   React.useEffect(() => {
     loadFileTreeFromLocal();
@@ -233,8 +238,8 @@ export default function BlogContent({ articles, articleContents, graphData, file
   // 从本地加载文件内容
   const loadFileContent = async (filePath: string) => {
     try {
-      // 直接使用固定的 md 目录路径，确保加载正确的文件
-      const mdDir = 'C:\\Users\\26401\\interview-question\\src\\md';
+      // 使用 getMdDirPath 函数获取正确的 md 目录路径
+      const mdDir = await getMdDirPath();
       const fullPath = path.join(mdDir, filePath);
       console.log('Loading file content from:', fullPath);
       
@@ -296,8 +301,8 @@ export default function BlogContent({ articles, articleContents, graphData, file
       }
 
       // 执行文件系统操作
-      // 直接使用固定的 md 目录路径，确保创建正确的文件夹
-      const mdDir = 'C:\\Users\\26401\\interview-question\\src\\md';
+      // 使用 getMdDirPath 函数获取正确的 md 目录路径
+      const mdDir = await getMdDirPath();
       let folderPath = '';
       
       if (parentKey === null) {
@@ -362,8 +367,8 @@ export default function BlogContent({ articles, articleContents, graphData, file
       }
 
       // 执行文件系统操作
-      // 直接使用固定的 md 目录路径，确保创建正确的文件
-      const mdDir = 'C:\\Users\\26401\\interview-question\\src\\md';
+      // 使用 getMdDirPath 函数获取正确的 md 目录路径
+      const mdDir = await getMdDirPath();
       let filePath = '';
       
       if (parentKey === null) {
