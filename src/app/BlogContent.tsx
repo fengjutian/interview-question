@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { FloatButton, Modal, Input } from '@douyinfe/semi-ui';
 import { IconAIEditLevel1, IconSourceControl } from '@douyinfe/semi-icons';
 import { MarkdownRenderer } from "../components/MarkdownRenderer.js";
+import CircuitsvisDemo from "../components/CircuitsvisDemo.js";
 import { AIEditSideSheet } from "../components/AIEditSideSheet.js";
 import { KnowledgeGraphSideSheet } from "../components/KnowledgeGraphSideSheet.js";
 import { SearchBar } from "../components/SearchBar.js";
@@ -682,6 +683,11 @@ export default function BlogContent({ articles, articleContents, graphData, file
           onSearchChange={setSearchTerm} 
           onClearSearch={clearSearch} 
         />
+
+        {/* Circuitsvis Demo */}
+        <div className="mb-4 p-4 border rounded">
+          <CircuitsvisDemo />
+        </div>
         
         {/* 分类筛选 */}
         <CategoryFilter 
